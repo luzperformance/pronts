@@ -13,7 +13,7 @@ de estados pequena, explícita e irreversível.
 
 - implementar `PUT /api/v1/appointments/{appointmentId}/schedule`;
 - implementar `PATCH /api/v1/appointments/{appointmentId}/status`;
-- aplicar optimistic locking por versão conhecida;
+- aplicar bloqueio otimista por versão conhecida;
 - repetir no reagendamento todas as regras de paciente, duração, passado,
   sobreposição e trava do calendário;
 - permitir somente as transições de RN-020;
@@ -24,7 +24,7 @@ de estados pequena, explícita e irreversível.
 
 - correção administrativa de estado terminal;
 - edição genérica do agendamento;
-- pattern State, command bus ou histórico de eventos completo.
+- padrão Estado, barramento de comandos ou histórico de eventos completo.
 
 ## Critérios de aceitação
 
@@ -38,9 +38,9 @@ de estados pequena, explícita e irreversível.
 
 ## Estratégia TDD
 
-- seam de domínio para a tabela completa de transições;
-- seam REST para reagendamento, conflito, versão e efeitos no calendário;
-- um comportamento por ciclo red → green, sem mock de componentes internos.
+- fronteira de domínio para a tabela completa de transições;
+- fronteira REST para reagendamento, conflito, versão e efeitos no calendário;
+- um comportamento por ciclo vermelho → verde, sem duplo de componentes internos.
 
 ## Requisitos
 

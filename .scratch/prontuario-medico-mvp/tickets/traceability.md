@@ -43,7 +43,7 @@ fecha sua validação integrada; não autoriza duplicar a regra.
 | RNF-014 | PP-002 e PP-019 |
 | RNF-015 | PP-013, PP-015, PP-018 |
 | RNF-016 | PP-006, PP-008, PP-010, PP-012, PP-020 |
-| RNF-017–018 | PP-001 e toda fatia com migration; PP-022 valida |
+| RNF-017–018 | PP-001 e toda fatia com migração; PP-022 valida |
 | RNF-019–022 | PP-016–018; PP-020 revisa limites |
 | RNF-023 | PP-005, PP-007, PP-011, PP-014, PP-019, PP-020 |
 | RNF-024 | PP-001, PP-005, PP-008, PP-014, PP-022 |
@@ -180,12 +180,12 @@ fecha sua validação integrada; não autoriza duplicar a regra.
 - `medicalrecord` usa paciente e o contrato mínimo de agenda apenas nos fluxos de
   vínculo/finalização;
 - `attachment` referencia paciente e consulta sem fazer o módulo clínico depender
-  de storage;
-- `shared` permanece restrito a Problem Details, correlation ID e tipos técnicos
+  de armazenamento;
+- `shared` permanece restrito a Problem Details, identificador de correlação e tipos técnicos
   realmente comuns;
 - o Traefik é a única entrada a partir da máquina local; API e PostgreSQL
   permanecem internos ao cluster;
-- uma réplica da API é uma restrição consciente de sessão e storage do MVP, não
+- uma réplica da API é uma restrição consciente de sessão e armazenamento do MVP, não
   uma promessa de alta disponibilidade;
-- migrations de tickets paralelos devem reservar números antes do início para
-  evitar colisão; não se cria migration apenas para reservar um número.
+- migrações de tickets paralelos devem reservar números antes do início para
+  evitar colisão; não se cria migração apenas para reservar um número.

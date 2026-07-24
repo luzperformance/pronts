@@ -1,4 +1,4 @@
-# PP-019 — Completar a auditoria consultável e append-only
+# PP-019 — Completar a auditoria consultável e apenas de inserção
 
 ## Resultado
 
@@ -21,31 +21,31 @@ pesquisa paginada, segura e estritamente somente leitura.
 - ordenar do evento mais recente para o mais antigo com desempate estável;
 - revisar todos os produtores previstos na especificação;
 - manter whitelist fechada de `safeMetadata`;
-- garantir ausência de operações de update/delete na aplicação;
-- reforçar append-only por permissões e desenho de migration compatíveis;
+- garantir ausência de operações de atualização/exclusão na aplicação;
+- reforçar a política apenas de inserção por permissões e desenho de migração compatíveis;
 - validar que mutações de negócio e evento confirmam na mesma transação;
-- validar que falhas de login usam transação própria.
+- validar que falhas de autenticação usam transação própria.
 
 ## Fora do escopo
 
 - CSV, PDF, relatórios, exportação ou dashboard;
 - alteração, exclusão ou reprocessamento de eventos;
-- domain events, AOP, mensageria ou pipeline assíncrono.
+- eventos de domínio, AOP, mensageria ou fluxo assíncrono.
 
 ## Critérios de aceitação
 
 - somente sessão autenticada consulta eventos;
 - todos os filtros funcionam isolados e combinados;
 - página é limitada, recente primeiro e determinística;
-- retorno não contém senha, conteúdo clínico, CPF, payload, binário ou caminho;
+- retorno não contém senha, conteúdo clínico, CPF, carga útil, binário ou caminho;
 - todos os eventos da seção 15.3 são observáveis após seus fluxos;
-- não existem endpoints REST mutáveis para auditoria;
-- tentativa interna de update/delete é rejeitada pela proteção adotada;
+- não existem rotas REST mutáveis para auditoria;
+- tentativa interna de atualização/exclusão é rejeitada pela proteção adotada;
 - não há formato de exportação.
 
 ## Estratégia TDD
 
-- seam REST cria eventos pelos endpoints de negócio e os consulta pela API;
+- fronteira REST cria eventos pelas rotas de negócio e os consulta pela API;
 - testes de rollback usam uma falha pública observável e confirmam ausência do
   evento de sucesso;
 - nenhum teste acessa diretamente a tabela para provar comportamento público.

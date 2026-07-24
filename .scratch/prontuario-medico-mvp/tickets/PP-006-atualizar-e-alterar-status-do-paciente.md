@@ -1,4 +1,4 @@
-# PP-006 — Atualizar e alterar status do paciente
+# PP-006 — Atualizar e alterar estado do paciente
 
 ## Resultado
 
@@ -14,7 +14,7 @@ histórico nem aceitar perda silenciosa por concorrência.
 - implementar `PUT /api/v1/patients/{patientId}`;
 - implementar `PATCH /api/v1/patients/{patientId}/status`;
 - exigir a versão conhecida pelo cliente nas mutações;
-- aplicar optimistic locking e mapear conflito para `409`;
+- aplicar bloqueio otimista e mapear conflito para `409`;
 - manter CPF canônico, válido e único após alteração;
 - preservar identificador e relacionamentos;
 - auditar `PATIENT_UPDATED` com nomes de campos, nunca valores;
@@ -38,10 +38,10 @@ histórico nem aceitar perda silenciosa por concorrência.
 
 ## Estratégia TDD
 
-- seam REST para atualização, status e concorrência usando duas representações da
+- fronteira REST para atualização, estado e concorrência usando duas representações da
   mesma versão;
-- seam de domínio apenas para transição de status se houver regra substancial;
-- nenhum mock de JPA ou teste unitário do application service.
+- fronteira de domínio apenas para transição de estado se houver regra substancial;
+- nenhum duplo de JPA ou teste unitário do serviço de aplicação.
 
 ## Requisitos
 

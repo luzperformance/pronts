@@ -13,9 +13,9 @@ servers:
     description: Cluster Kubernetes local com TLS confiado apenas na máquina de demonstração
 tags:
   - name: Autenticação
-    description: Login, identidade, token CSRF e logout da sessão server-side
+    description: Autenticação, identidade, token CSRF e encerramento da sessão mantida no servidor
   - name: Pacientes
-    description: Cadastro, busca, atualização e status do paciente
+    description: Cadastro, busca, atualização e estado do paciente
   - name: Agenda
     description: Agendamentos, transições, consulta de agenda e lembretes
   - name: Bloqueios
@@ -25,7 +25,7 @@ tags:
   - name: Prontuário
     description: Leitura cronológica de consultas finalizadas
   - name: Anexos
-    description: Metadados, upload, download e remoção com lápide
+    description: Metadados, envio, baixamento e remoção com lápide
   - name: Auditoria
     description: Trilha interna sem conteúdo clínico
 security:
@@ -93,8 +93,8 @@ paths:
       operationId: getCsrfToken
       summary: Obter token CSRF
       description: |
-        Define/atualiza XSRF-TOKEN e devolve o nome do header e o token.
-        O mesmo cookie jar deve ser usado na mutação seguinte.
+        Define/atualiza XSRF-TOKEN e devolve o nome do cabeçalho e o token.
+        O mesmo arquivo de cookies deve ser usado na mutação seguinte.
       security: []
       responses:
         "200":
@@ -691,7 +691,7 @@ paths:
           csrfHeader: []
       responses:
         "200":
-          description: Consulta finalizada; repetição idempotente indica alreadyFinalized
+          description: Consulta finalizada; repetição idempotente indica `alreadyFinalized`
           content:
             application/json:
               schema:
@@ -714,7 +714,7 @@ paths:
     post:
       tags: [Consultas]
       operationId: addConsultationAddendum
-      summary: Adicionar adendo append-only
+      summary: Adicionar adendo imutável
       security:
         - sessionCookie: []
           csrfHeader: []
@@ -915,7 +915,7 @@ paths:
       summary: Baixar binário autenticado
       responses:
         "200":
-          description: Conteúdo com Content-Disposition attachment
+          description: Conteúdo com o cabeçalho Content-Disposition definido como attachment
           headers:
             Content-Disposition:
               schema:
@@ -1005,7 +1005,7 @@ components:
       type: apiKey
       in: cookie
       name: JSESSIONID
-      description: Sessão server-side; HttpOnly, SameSite=Lax e Secure em HTTPS
+      description: Sessão mantida no servidor; HttpOnly, SameSite=Lax e Secure em HTTPS
     csrfHeader:
       type: apiKey
       in: header
@@ -1088,7 +1088,7 @@ components:
         format: uuid
   responses:
     Problem:
-      description: Problem Details seguro; status e tipo dependem da falha
+      description: Problem Details seguro; código de estado e tipo dependem da falha
       headers:
         X-Correlation-ID:
           $ref: "#/components/headers/CorrelationId"

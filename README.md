@@ -1,14 +1,14 @@
 # Primeiro Prontuário
 
 MVP acadêmico de prontuário para um único médico, implementado como API REST
-Spring Boot com PostgreSQL 18. O projeto não possui frontend.
+Spring Boot com PostgreSQL 18. O projeto não possui interface web.
 
 > Use somente dados fictícios ou previamente anonimizados. Este MVP não é
 > certificado para uso clínico, regulatório ou com dados pessoais reais.
 
-## Começar pelo checkout
+## Começar pela cópia de trabalho
 
-Pré-requisitos para build e testes:
+Pré-requisitos para construção e testes:
 
 - JDK 21;
 - Docker acessível pelo usuário, usado por Testcontainers;
@@ -61,8 +61,8 @@ export SESSION_COOKIE_SECURE='false'
 
 `SESSION_COOKIE_SECURE=false` é permitido somente nesse teste HTTP em loopback.
 A demonstração Kubernetes usa HTTPS e mantém o cookie seguro. Na primeira
-inicialização, o Flyway cria e valida o schema; um histórico de migrations
-incompatível impede o startup.
+inicialização, o Flyway cria e valida o esquema; um histórico de migrações
+incompatível impede a inicialização.
 
 ## Configuração
 
@@ -71,37 +71,37 @@ incompatível impede o startup.
 | `DB_URL` | `jdbc:postgresql://localhost:5432/primeiro_prontuario` | conexão JDBC |
 | `DB_USERNAME` | `primeiro_prontuario` | usuário do banco |
 | `DB_PASSWORD` | vazio | senha do banco |
-| `DOCTOR_USERNAME` | sem padrão | usuário único provisionado no startup |
+| `DOCTOR_USERNAME` | sem padrão | usuário único provisionado na inicialização |
 | `DOCTOR_PASSWORD` | sem padrão | senha do usuário único |
 | `APP_TIME_ZONE` | `America/Sao_Paulo` | interpretação das datas locais da agenda |
 | `ATTACHMENT_STORAGE_DIRECTORY` | `./data/attachments` | diretório privado dos binários |
 | `SESSION_TIMEOUT` | `30m` | duração máxima da sessão |
 | `SESSION_COOKIE_SECURE` | `true` | exige HTTPS para o cookie de sessão |
 | `APP_CORS_ALLOWED_ORIGIN` | vazio | única origem exata autorizada, se houver |
-| `FORWARD_HEADERS_STRATEGY` | `NONE` | confiança em forwarded headers; alterada só no perfil de deploy |
+| `FORWARD_HEADERS_STRATEGY` | `NONE` | confiança em cabeçalhos encaminhados; alterada só no perfil de implantação |
 | `SPRING_PROFILES_ACTIVE` | vazio | use `prod` no Kubernetes |
 | `TRUSTED_PROXY_NETWORKS` | redes privadas locais | proxies confiáveis no perfil `prod` |
 
 Não grave valores reais em arquivos versionados, histórico de shell, exemplos
-ou screenshots.
+ou capturas de tela.
 
 ## Documentação verificável
 
 - contrato completo: [`docs/openapi.yaml`](docs/openapi.yaml);
-- configuração de runtime: [`docs/runtime-configuration.md`](docs/runtime-configuration.md);
+- configuração de execução: [`docs/runtime-configuration.md`](docs/runtime-configuration.md);
 - sessão, cookie, CSRF, CORS e exemplos: [`docs/http-api.md`](docs/http-api.md);
 - Docker, Kubernetes local, Traefik e TLS:
   [`docs/deploy-kubernetes-local.md`](docs/deploy-kubernetes-local.md);
-- backup e restauração conjunta:
+- cópia de segurança e restauração conjunta:
   [`docs/backup-restore.md`](docs/backup-restore.md);
-- decisões e patterns: [`docs/architecture.md`](docs/architecture.md);
+- decisões e padrões: [`docs/architecture.md`](docs/architecture.md);
 - revisão de escopo: [`docs/scope-review.md`](docs/scope-review.md);
 - evidências e demonstração: [`docs/final-checklist.md`](docs/final-checklist.md).
 
 ## Limites do MVP
 
-Há um único médico e nenhum login de paciente. O MVP cobre cadastro e pesquisa
+Há um único médico e nenhuma autenticação de paciente. O MVP cobre cadastro e pesquisa
 de pacientes, agenda e bloqueios, rascunho/finalização/adendo clínico, anexos e
-auditoria interna. Não cobre frontend, múltiplos médicos, multitenancy, CRM,
-comunicação externa, relatórios, prescrição, documentos do paciente, cloud,
+auditoria interna. Não cobre interface web, múltiplos médicos, multitenância, CRM,
+comunicação externa, relatórios, prescrição, documentos do paciente, nuvem,
 alta disponibilidade, certificação regulatória ou coleta de dados reais.

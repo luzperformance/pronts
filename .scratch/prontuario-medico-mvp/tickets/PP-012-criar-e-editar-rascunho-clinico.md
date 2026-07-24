@@ -13,7 +13,7 @@ do prontuário definitivo.
 ## Escopo
 
 - criar `Consultation` com estado inicial `DRAFT` e versionamento otimista;
-- criar migration dos campos clínicos e vínculo opcional 0..1 com agendamento;
+- criar migração dos campos clínicos e vínculo opcional 0..1 com agendamento;
 - implementar `POST /api/v1/patients/{patientId}/consultations`;
 - implementar `GET /api/v1/consultations/{consultationId}`;
 - implementar `PUT /api/v1/consultations/{consultationId}`;
@@ -41,9 +41,9 @@ do prontuário definitivo.
 
 ## Estratégia TDD
 
-- seam REST para criar, consultar, editar e verificar concorrência;
-- seam de domínio somente para invariantes locais de estado e vínculo;
-- não usar mocks de agenda, paciente ou repository.
+- fronteira REST para criar, consultar, editar e verificar concorrência;
+- fronteira de domínio somente para invariantes locais de estado e vínculo;
+- não usar duplos de agenda, paciente ou repositório.
 
 ## Requisitos
 

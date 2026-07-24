@@ -2,14 +2,14 @@
 
 O contrato normativo da versão é
 [`openapi.yaml`](openapi.yaml). Todas as rotas de negócio começam com
-`/api/v1`; o único endpoint operacional exposto é `GET /actuator/health`.
+`/api/v1`; a única rota operacional exposta é `GET /actuator/health`.
 
 Os exemplos usam uma pessoa e credenciais fictícias. Nunca copie dados clínicos,
 CPFs, anexos, cookies ou senhas reais para comandos, logs ou documentação.
 
 ## Sessão e cookies
 
-`POST /api/v1/auth/login` recebe JSON e cria uma sessão no servidor. Em sucesso,
+`POST /api/v1/auth/login` recebe JSON e cria uma sessão no servidor. Em caso de sucesso,
 o cliente recebe `JSESSIONID` com `HttpOnly`, `SameSite=Lax` e `Secure` na
 demonstração HTTPS. A senha não volta na resposta.
 
@@ -40,12 +40,12 @@ use `--cacert deploy/tls/ca.crt`; não use `--insecure`.
 
 ## CSRF
 
-Login é a única mutação dispensada do token. Para `POST`, `PUT`, `PATCH` ou
+A autenticação é a única mutação dispensada do token. Para `POST`, `PUT`, `PATCH` ou
 `DELETE` autenticado:
 
-1. obtenha `GET /api/v1/auth/csrf` usando o mesmo cookie jar;
+1. obtenha `GET /api/v1/auth/csrf` usando o mesmo arquivo de cookies;
 2. leia `headerName` e `token` do JSON;
-3. envie o header indicado e os dois cookies na mutação.
+3. envie o cabeçalho indicado e os dois cookies na mutação.
 
 ```bash
 csrf="$(
@@ -77,13 +77,13 @@ responde `403` como `application/problem+json`.
 
 ## CORS
 
-O uso normal é same-origin pelo host do Traefik e não precisa de CORS. Quando
-`APP_CORS_ALLOWED_ORIGIN` está vazio, nenhuma origem cross-origin é autorizada.
+O uso normal ocorre na mesma origem pelo nome de host do Traefik e não precisa de CORS.
+Quando `APP_CORS_ALLOWED_ORIGIN` está vazio, nenhum acesso entre origens é autorizado.
 Se um cliente de demonstração separado for indispensável, configure uma única
 origem exata, por exemplo `https://cliente.prontuario.local`.
 
 O servidor permite credenciais, os métodos `GET`, `POST`, `PUT`, `PATCH`,
-`DELETE` e `OPTIONS`, e apenas os headers `Content-Type`, `X-XSRF-TOKEN` e
+`DELETE` e `OPTIONS`, e apenas os cabeçalhos `Content-Type`, `X-XSRF-TOKEN` e
 `X-Correlation-ID`. O navegador precisa enviar cookies (`credentials:
 include`). Não configure `*` com credenciais.
 
@@ -121,8 +121,8 @@ ser usados isoladamente ou em conjunto:
 
 O retorno expõe apenas identificadores, ação, resultado, instante, correlação e
 a lista fechada de nomes de campos alterados. Não contém valores cadastrais,
-conteúdo clínico, senha, payload, binário ou caminho. Não existem operações
-REST de alteração, exclusão ou exportação da auditoria; a migration V16 também
+conteúdo clínico, senha, carga útil, binário ou caminho. Não existem operações
+REST de alteração, exclusão ou exportação da auditoria; a migração V16 também
 rejeita `UPDATE` e `DELETE` no PostgreSQL.
 
 ## Problem Details e correlação

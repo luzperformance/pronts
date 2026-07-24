@@ -25,7 +25,7 @@ o agendamento ativo relacionado na mesma transação.
 
 - reabertura, exclusão, edição de consulta finalizada ou versionamento destrutivo;
 - adendos e prontuário cronológico;
-- evento assíncrono, AOP de auditoria ou pattern State.
+- evento assíncrono, AOP de auditoria ou padrão Estado.
 
 ## Critérios de aceitação
 
@@ -33,7 +33,7 @@ o agendamento ativo relacionado na mesma transação.
 - finalização válida fixa estado, autor e instante;
 - segunda finalização não duplica dados ou auditoria;
 - `PUT` posterior retorna `409`;
-- não existe endpoint de exclusão da consulta;
+- não existe rota de exclusão da consulta;
 - agendamento ativo vinculado se torna `COMPLETED`;
 - falha em qualquer parte reverte finalização, conclusão do agendamento e
   auditoria;
@@ -41,9 +41,9 @@ o agendamento ativo relacionado na mesma transação.
 
 ## Estratégia TDD
 
-- seam de domínio para completude, espaços, transição e bloqueio de mutação;
-- seam REST para atomicidade observável, idempotência e integração com agenda;
-- PostgreSQL real, sem mock de auditoria ou agendamento.
+- fronteira de domínio para completude, espaços, transição e bloqueio de mutação;
+- fronteira REST para atomicidade observável, idempotência e integração com agenda;
+- PostgreSQL real, sem duplo de auditoria ou agendamento.
 
 ## Requisitos
 

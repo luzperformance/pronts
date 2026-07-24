@@ -2,7 +2,7 @@
 
 ## Resultado
 
-Permitir download autenticado e seguro de anexo ativo, mediado pela aplicação e
+Permitir baixamento autenticado e seguro de anexo ativo, mediado pela aplicação e
 sem revelar a localização física.
 
 ## Dependências
@@ -17,29 +17,29 @@ sem revelar a localização física.
 - definir `Content-Type` a partir do tipo detectado e
   `Content-Disposition: attachment`;
 - codificar o nome original de modo seguro;
-- tratar Markdown como download textual UTF-8, nunca HTML;
+- tratar Markdown como baixamento textual UTF-8, nunca HTML;
 - auditar `ATTACHMENT_DOWNLOADED` sem binário, caminho ou nome sensível.
 
 ## Fora do escopo
 
 - URL pública, link assinado, CDN, preview ou renderização inline;
 - range requests e cache distribuído;
-- download de anexo removido, definido em PP-018.
+- baixamento de anexo removido, definido em PP-018.
 
 ## Critérios de aceitação
 
-- sessão válida baixa conteúdo byte a byte igual ao upload;
+- sessão válida baixa conteúdo byte a byte igual ao envio;
 - ausência de sessão retorna `401`;
-- caminho e chave de storage nunca aparecem em headers ou corpo;
-- header de disposição não permite injeção;
+- caminho e chave de armazenamento nunca aparecem em cabeçalhos ou corpo;
+- cabeçalho de disposição não permite injeção;
 - Markdown é entregue como anexo UTF-8 e não renderizado;
-- download inexistente retorna `404` seguro;
-- cada download bem-sucedido gera auditoria mínima.
+- baixamento inexistente retorna `404` seguro;
+- cada baixamento bem-sucedido gera auditoria mínima.
 
 ## Estratégia TDD
 
-- seam REST executa upload seguido de download real;
-- comparar hash calculado fora da implementação, sem acessar o filesystem;
+- fronteira REST executa envio seguido de baixamento real;
+- comparar resumo criptográfico calculado fora da implementação, sem acessar o sistema de arquivos;
 - provar auditoria exclusivamente por `/api/v1/audit-events`.
 
 ## Requisitos

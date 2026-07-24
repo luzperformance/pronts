@@ -1,9 +1,9 @@
-# PP-002 — Login e contrato HTTP seguro
+# PP-002 — Autenticação e contrato HTTP seguro
 
 ## Resultado
 
-Permitir que a conta médica única faça login por credenciais válidas, receba uma
-sessão server-side e obtenha erros uniformes e rastreáveis em tentativas inválidas.
+Permitir que a conta médica única se autentique por credenciais válidas, receba uma
+sessão mantida no servidor e obtenha erros uniformes e rastreáveis em tentativas inválidas.
 
 ## Dependências
 
@@ -11,44 +11,44 @@ sessão server-side e obtenha erros uniformes e rastreáveis em tentativas invá
 
 ## Escopo
 
-- criar `DoctorAccount` e `AuditEvent` no mínimo necessário ao login;
+- criar `DoctorAccount` e `AuditEvent` no mínimo necessário à autenticação;
 - provisionar exatamente uma conta por configuração segura e idempotente, sem
-  endpoint de cadastro;
-- armazenar somente hash adaptativo com salt;
+  rota de cadastro;
+- armazenar somente resumo criptográfico adaptativo com sal criptográfico aleatório;
 - implementar `POST /api/v1/auth/login`;
-- renovar o identificador de sessão no login;
+- renovar o identificador de sessão na autenticação;
 - responder credencial inválida de forma genérica;
 - auditar sucesso na transação adequada e falha em transação própria, sem senha;
 - introduzir uma leitura autenticada mínima de `/api/v1/audit-events`, paginada
-  e filtrável por ação, para tornar os eventos observáveis pelo seam REST;
-- introduzir Problem Details, erros por campo e correlation ID;
+  e filtrável por ação, para tornar os eventos observáveis pela fronteira REST;
+- introduzir Problem Details, erros por campo e identificador de correlação;
 - sanitizar exceções conhecidas e inesperadas;
 - preparar CSRF para clientes baseados em cookie sem desativá-lo globalmente.
 
 ## Fora do escopo
 
-- logout, `/auth/me`, autorização completa dos módulos e CORS de produção;
-- endpoint de registro, JWT, refresh token, MFA ou recuperação de senha;
-- filtros completos e hardening append-only da auditoria, concluídos em PP-019.
+- encerramento de sessão, `/auth/me`, autorização completa dos módulos e CORS de produção;
+- rota de registro, JWT, token de renovação, MFA ou recuperação de senha;
+- filtros completos e reforço da auditoria apenas de inserção, concluídos em PP-019.
 
 ## Critérios de aceitação
 
 - credenciais válidas criam sessão e retornam identidade mínima;
 - credenciais inválidas sempre retornam a mesma mensagem segura;
 - senha ausente ou corpo inválido retorna `400` com campos inválidos;
-- a resposta nunca contém hash, senha ou indicação de existência do username;
-- cada resposta de erro contém status, tipo, título, detalhe seguro e correlation
-  ID;
+- a resposta nunca contém resumo criptográfico, senha ou indicação de existência do nome de usuário;
+- cada resposta de erro contém código de estado, tipo, título, detalhe seguro e identificador
+  de correlação;
 - sucesso e falha geram `AUTH_LOGIN_SUCCEEDED` ou `AUTH_LOGIN_FAILED`;
 - uma falha de autenticação auditada não depende do rollback da tentativa.
 - os dois resultados são observáveis pela leitura mínima da auditoria, sem
-  payload, senha ou conteúdo sensível.
+  carga útil, senha ou conteúdo sensível.
 
 ## Estratégia TDD
 
-- seam REST para login válido, inválido, validação e rotação de sessão;
-- seam REST para provar a auditoria somente pela rota pública mínima;
-- nenhum mock de `AuthenticationManager`, repository ou auditoria.
+- fronteira REST para autenticação válida, inválida, validação e rotação de sessão;
+- fronteira REST para provar a auditoria somente pela rota pública mínima;
+- nenhum duplo de `AuthenticationManager`, repositório ou auditoria.
 
 ## Requisitos
 

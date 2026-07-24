@@ -11,7 +11,7 @@ Permitir reservar e liberar intervalos futuros sem paciente, integrando bloqueio
 
 ## Escopo
 
-- criar `ScheduleBlock` e sua migration;
+- criar `ScheduleBlock` e sua migração;
 - implementar `POST /api/v1/schedule-blocks`;
 - implementar `GET /api/v1/schedule-blocks` por período;
 - implementar `DELETE /api/v1/schedule-blocks/{blockId}`;
@@ -40,9 +40,9 @@ Permitir reservar e liberar intervalos futuros sem paciente, integrando bloqueio
 
 ## Estratégia TDD
 
-- seam REST para todo o fluxo bloqueio → conflito → remoção → agendamento;
+- fronteira REST para todo o fluxo bloqueio → conflito → remoção → agendamento;
 - caso concorrente usa PostgreSQL e requisições reais;
-- reutilizar o seam de domínio de `TimeInterval`, sem duplicar a regra.
+- reutilizar a fronteira de domínio de `TimeInterval`, sem duplicar a regra.
 
 ## Requisitos
 

@@ -33,9 +33,9 @@ comunicação externa.
 
 ## Estratégia TDD
 
-- seam REST com `Clock` fixo e agendamentos criados pela API;
+- fronteira REST com `Clock` fixo e agendamentos criados pela API;
 - exemplos explícitos nos limites inferior e superior da janela;
-- nenhum teste unitário de query service sem regra.
+- nenhum teste unitário de serviço de consulta sem regra.
 
 ## Requisitos
 

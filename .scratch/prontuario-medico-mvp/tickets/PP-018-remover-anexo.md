@@ -16,7 +16,7 @@ preservar uma lápide auditável e imutável.
 - exigir justificativa não vazia;
 - aplicar transição `ACTIVE → REMOVED`;
 - registrar autor, justificativa e instante do servidor;
-- apagar o binário por protocolo consistente com o commit do banco;
+- apagar o binário por protocolo consistente com a confirmação da transação do banco;
 - conservar identificadores mínimos, tipo, tamanho e SHA-256;
 - excluir removidos da listagem padrão;
 - fazer metadados indicarem a lápide sem dados desnecessários;
@@ -27,24 +27,24 @@ preservar uma lápide auditável e imutável.
 
 - restauração, lixeira acessível, retenção configurável ou exclusão da lápide;
 - remoção do paciente ou consulta vinculada;
-- endpoint administrativo de limpeza.
+- rota administrativa de limpeza.
 
 ## Critérios de aceitação
 
 - justificativa em branco retorna `400`;
-- após remoção, conteúdo retorna o status fixado por G-02;
+- após remoção, conteúdo retorna o estado fixado por G-02;
 - o binário deixa de estar acessível;
-- lápide preserva hash e metadados mínimos acordados;
+- lápide preserva resumo criptográfico e metadados mínimos acordados;
 - nova remoção não duplica efeitos nem destrói a lápide;
 - falha de I/O ou banco não deixa estado silenciosamente divergente;
 - remoção e auditoria mantêm a atomicidade observável possível do protocolo.
 
 ## Estratégia TDD
 
-- seam de domínio para transição e imutabilidade da lápide;
-- seam REST para upload → remoção → listagem → metadados → download;
-- falhas do adapter são exercitadas pela fronteira real controlável, sem mockar
-  application service ou repository.
+- fronteira de domínio para transição e imutabilidade da lápide;
+- fronteira REST para envio → remoção → listagem → metadados → baixamento;
+- falhas do adaptador são exercitadas pela fronteira real controlável, sem criar duplos do
+  serviço de aplicação ou repositório.
 
 ## Requisitos
 

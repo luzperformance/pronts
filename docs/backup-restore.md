@@ -1,19 +1,19 @@
-# Backup e restauração conjunta
+# Cópia de segurança e restauração conjunta
 
 O estado recuperável é um par inseparável:
 
-1. dump do PostgreSQL, incluindo `flyway_schema_history` e metadados dos anexos;
+1. cópia lógica do PostgreSQL, incluindo `flyway_schema_history` e metadados dos anexos;
 2. cópia do PVC de anexos, incluindo `content/` e `staging/`.
 
 Restaurar somente um lado pode produzir metadados sem binário ou binários sem
 metadado. Os comandos abaixo são manuais e adequados apenas ao cluster
-descartável de demonstração. Não constituem política de backup de produção,
-criptografia, retenção, agendamento ou disaster recovery.
+descartável de demonstração. Não constituem política de cópia de segurança de produção,
+criptografia, retenção, agendamento ou recuperação de desastres.
 
 > Execute somente com dados fictícios ou anonimizados. O diretório `backups/` é
 > ignorado pelo Git, mas continua contendo material sensível da demonstração.
 
-## Criar um snapshot coordenado
+## Criar uma captura coordenada
 
 Confirme que o namespace está saudável e escolha um diretório novo:
 
@@ -36,8 +36,8 @@ kubectl rollout status deployment/primeiro-prontuario-api \
   --timeout=180s
 ```
 
-Registre um inventário independente dos anexos ativos e gere o dump no formato
-custom do PostgreSQL:
+Registre um inventário independente dos anexos ativos e gere a cópia lógica no formato
+personalizado do PostgreSQL:
 
 ```bash
 kubectl exec postgresql-0 --namespace primeiro-prontuario -- \
@@ -104,7 +104,7 @@ kubectl delete pod attachment-maintenance \
   --wait=true
 ```
 
-Finalize o conjunto com checksums e reative a API:
+Finalize o conjunto com somas de verificação e reative a API:
 
 ```bash
 (
@@ -125,7 +125,7 @@ Não altere individualmente os três arquivos protegidos por `SHA256SUMS`.
 ## Restaurar em ambiente descartável
 
 Nunca ensaie sobre o único ambiente que precisa ser preservado. Use um cluster
-local descartável ou apague o namespace apenas após confirmar que o snapshot é
+local descartável ou apague o namespace apenas após confirmar que a captura é
 da demonstração fictícia correta.
 
 Verifique o conjunto antes de modificar o destino:
@@ -142,7 +142,7 @@ inicie a API ainda:
 
 ```bash
 kubectl apply -f deploy/kubernetes/00-namespace.yaml
-# recrie primeiro-prontuario-credentials como documentado no guia de deploy
+# recrie primeiro-prontuario-credentials como documentado no guia de implantação
 kubectl apply -f deploy/kubernetes/10-configmap.yaml
 kubectl apply -f deploy/kubernetes/20-attachment-pvc.yaml
 kubectl apply -f deploy/kubernetes/30-postgresql.yaml
@@ -151,7 +151,7 @@ kubectl rollout status statefulset/postgresql \
   --timeout=180s
 ```
 
-Restaure o dump no banco vazio:
+Restaure a cópia lógica no banco vazio:
 
 ```bash
 dd if="$pp_backup_dir/database.dump" status=none |
@@ -162,7 +162,7 @@ dd if="$pp_backup_dir/database.dump" status=none |
     --clean --if-exists --no-owner --exit-on-error'
 ```
 
-Recrie o pod `attachment-maintenance` do procedimento de backup e restaure o
+Recrie o pod `attachment-maintenance` do procedimento de cópia de segurança e restaure o
 arquivo no PVC vazio:
 
 ```bash
@@ -175,7 +175,7 @@ dd if="$pp_backup_dir/attachments.tar.gz" status=none |
     tar -C /var/lib/primeiro-prontuario/attachments -xzf -
 ```
 
-Compare cada hash ativo do banco com o binário restaurado:
+Compare cada resumo criptográfico ativo do banco com o binário restaurado:
 
 ```bash
 dd if="$pp_backup_dir/active-attachments.txt" status=none |
@@ -207,13 +207,13 @@ kubectl rollout status deployment/primeiro-prontuario-api \
 ```
 
 O ensaio está aprovado apenas quando `pg_restore`, a conferência de todos os
-SHA-256 e o smoke autenticado terminarem com código zero.
+SHA-256 e o teste de fumaça autenticado terminarem com código zero.
 
 ## Falhas que invalidam o ensaio
 
-- dump e tar não pertencem ao mesmo período de API parada;
+- a cópia lógica e o arquivo tar não pertencem ao mesmo período de API parada;
 - `SHA256SUMS` falha;
-- falta qualquer `storage_key` ativo ou o hash diverge;
+- falta qualquer `storage_key` ativo ou o resumo criptográfico diverge;
 - Flyway rejeita o histórico restaurado;
 - API ou PostgreSQL foram expostos fora de `ClusterIP`;
 - o teste usou dados reais;

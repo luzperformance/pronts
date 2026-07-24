@@ -1,7 +1,7 @@
 # Revisão final de escopo
 
-Revisão baseada nos controllers, migrations, `pom.xml`, manifests e contrato
-OpenAPI do checkout.
+Revisão baseada nos controladores, migrações, `pom.xml`, manifestos e contrato
+OpenAPI da cópia de trabalho.
 
 ## Superfície HTTP
 
@@ -20,37 +20,37 @@ Há 30 operações em `/api/v1`, todas presentes em
 | auditoria | 1 |
 
 Fora da versão existe somente `GET /actuator/health`. Não existem rotas de
-frontend, administração, cadastro de médicos, login de paciente, relatório,
-exportação, comunicação, prescrição, cloud ou storage público.
+interface web, administração, cadastro de médicos, autenticação de paciente, relatório,
+exportação, comunicação, prescrição, nuvem ou armazenamento público.
 
 ## Persistência
 
-As migrations V1–V16 cobrem marcador de schema, médico único, auditoria
-append-only,
-paciente, agenda, bloqueio, consulta, adendo e anexo. Não há tabelas de
-multitenancy, CRM, faturamento, mensageria ou integrações externas.
+As migrações V1–V16 cobrem marcador de esquema, médico único, auditoria apenas
+de inserção, paciente, agenda, bloqueio, consulta, adendo e anexo. Não há tabelas de
+multitenância, CRM, faturamento, mensageria ou integrações externas.
 
-## Dependências de runtime
+## Dependências de execução
 
 As dependências diretas se limitam a Actuator, JPA, Flyway, Security, Validation,
 Web MVC, driver PostgreSQL e suporte Flyway para PostgreSQL. Dependências de
-teste se limitam ao starter de testes, Spring Security Test e
-Testcontainers/PostgreSQL. Não há H2, OpenAPI runtime, frontend, broker, SDK de
-cloud ou cliente de serviço externo.
+teste se limitam ao Spring Boot Starter Test, Spring Security Test e
+Testcontainers/PostgreSQL. Não há H2, OpenAPI em execução, interface web,
+broker de mensagens, SDK de nuvem ou cliente de serviço externo.
 
 O OpenAPI é um artefato estático versionado para não adicionar uma rota de
-documentação, UI ou dependência de runtime fora do MVP.
+documentação, interface de usuário ou dependência de execução fora do MVP.
 
 ## Topologia
 
-Os manifests criam um namespace, dois PVCs privados e distintos, PostgreSQL 18,
-API, Services `ClusterIP` e dois Ingresses Traefik para redirect/TLS. Não criam
+Os manifestos criam um namespace, dois PVCs privados e distintos, PostgreSQL 18,
+API, recursos `Service` `ClusterIP` e dois recursos `Ingress` Traefik para
+redirecionamento/TLS. Não criam
 `NodePort`, `LoadBalancer`, `hostPort`, Helm, operador, HPA, múltiplas réplicas
-ou recurso de cloud.
+ou recurso de nuvem.
 
 ## Limites declarados
 
 Este software é acadêmico, para um único médico, e aceita somente dados
 fictícios ou anonimizados. Não oferece certificação regulatória, alta
-disponibilidade, disaster recovery multirregião, suporte operacional,
+disponibilidade, recuperação de desastres multirregião, suporte operacional,
 privacidade validada para produção ou autorização para dados reais.

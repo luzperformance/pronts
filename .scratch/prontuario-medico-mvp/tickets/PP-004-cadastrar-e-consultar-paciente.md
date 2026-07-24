@@ -12,7 +12,7 @@ cadastro persistido pelo identificador estável.
 ## Escopo
 
 - criar entidade, tabela e contratos de entrada/saída de `Patient`;
-- implementar `Cpf` como value object público do domínio;
+- implementar `Cpf` como objeto de valor público do domínio;
 - normalizar CPF e telefone, validar CPF e garantir unicidade no banco;
 - tratar data de nascimento como data civil;
 - implementar `POST /api/v1/patients`;
@@ -22,8 +22,8 @@ cadastro persistido pelo identificador estável.
 
 ## Fora do escopo
 
-- pesquisa, atualização, mudança de status ou exclusão;
-- novos value objects para strings sem invariantes;
+- pesquisa, atualização, mudança de estado ou exclusão;
+- novos objetos de valor para textos sem invariantes;
 - serialização direta da entidade JPA.
 
 ## Critérios de aceitação
@@ -38,9 +38,9 @@ cadastro persistido pelo identificador estável.
 
 ## Estratégia TDD
 
-- seam de domínio para exemplos válidos e inválidos de `Cpf`;
-- seam REST para cadastro, consulta, validação, duplicidade e autenticação;
-- PostgreSQL garante a prova de unicidade; não usar H2 nem mock de repository.
+- fronteira de domínio para exemplos válidos e inválidos de `Cpf`;
+- fronteira REST para cadastro, consulta, validação, duplicidade e autenticação;
+- PostgreSQL garante a prova de unicidade; não usar H2 nem duplo de repositório.
 
 ## Requisitos
 

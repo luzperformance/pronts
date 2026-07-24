@@ -30,7 +30,7 @@ ordenação determinística.
 - cada filtro funciona isoladamente e em combinação;
 - nomes e e-mail ignoram diferença entre maiúsculas e minúsculas;
 - CPF usa correspondência exata após normalização;
-- telefone e status filtram corretamente;
+- telefone e estado filtram corretamente;
 - uma busca vazia retorna página vazia com `200`;
 - paginação inválida ou ordenação fora da lista branca retorna `400`;
 - a ordem não oscila entre requisições com os mesmos dados;
@@ -38,7 +38,7 @@ ordenação determinística.
 
 ## Estratégia TDD
 
-- seam REST com massa pequena e explícita criada pela própria API;
+- fronteira REST com massa pequena e explícita criada pela própria API;
 - exemplos cobrem combinação, caixa, página vazia e desempate;
 - não testar internamente a Specification ou emitir assertions sobre SQL.
 

@@ -39,9 +39,9 @@ consultar a agenda por identificador e período.
 
 ## Estratégia TDD
 
-- seam de domínio para duração, cálculo e fronteiras de intervalo;
-- seam REST com `Clock` controlado para passado, UTC e zona configurada;
-- não testar chamadas internas ao relógio ou ao repository.
+- fronteira de domínio para duração, cálculo e limites de intervalo;
+- fronteira REST com `Clock` controlado para passado, UTC e zona configurada;
+- não testar chamadas internas ao relógio ou ao repositório.
 
 ## Requisitos
 

@@ -11,7 +11,7 @@ finalizada, sem alterar ou ocultar o registro original.
 
 ## Escopo
 
-- criar `Addendum` e sua migration sem operações de update/delete;
+- criar `Addendum` e sua migração sem operações de atualização/exclusão;
 - implementar `POST /api/v1/consultations/{consultationId}/addenda`;
 - exigir conteúdo e justificativa não vazios;
 - aceitar adendo somente para consulta `FINALIZED`;
@@ -37,8 +37,8 @@ finalizada, sem alterar ou ocultar o registro original.
 
 ## Estratégia TDD
 
-- seam de domínio para criação válida, branco e imutabilidade;
-- seam REST para integração com detalhes, prontuário e auditoria;
+- fronteira de domínio para criação válida, branco e imutabilidade;
+- fronteira REST para integração com detalhes, prontuário e auditoria;
 - não testar construtores JPA ou contar chamadas internas.
 
 ## Requisitos

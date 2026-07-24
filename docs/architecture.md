@@ -1,109 +1,110 @@
-# Decisões arquiteturais e patterns
+# Decisões arquiteturais e padrões
 
 Este registro descreve o que existe no MVP. Não é uma lista de extensões futuras.
 
 ## ADR-001 — Monólito modular por capacidade
 
-**Status:** adotada.
+**Situação:** adotada.
 
 A aplicação é um único processo Spring Boot. Pacotes representam capacidades
 (`auth`, `patient`, `appointment`, `medicalrecord`, `attachment`, `audit`) e
 compartilham somente infraestrutura HTTP estritamente comum.
 
-Consequências: transações locais e deploy simples; não há independência de
-escala ou implantação por módulo. Microserviços, mensageria distribuída, service
-mesh e saga foram rejeitados porque não resolvem um requisito do MVP.
+Consequências: transações locais e implantação simples; não há independência de
+escala ou implantação por módulo. Microserviços, mensageria distribuída, malha
+de serviços e saga foram rejeitados porque não resolvem um requisito do MVP.
 
-## ADR-002 — REST e domínio como únicos seams de teste
+## ADR-002 — REST e domínio como únicas fronteiras de teste
 
-**Status:** adotada.
+**Situação:** adotada.
 
 Comportamento integrado é verificado pela API REST com a aplicação completa e
 PostgreSQL 18/Testcontainers. Regras substanciais sem Spring podem usar a API
-pública do domínio. Testes isolados de controller/service/repository, mocks
+pública do domínio. Testes isolados de controlador/serviço/repositório, duplos
 internos e H2 foram rejeitados porque acoplariam os testes à implementação ou
 mudariam a semântica do banco.
 
 ## ADR-003 — PostgreSQL versionado por Flyway
 
-**Status:** adotada.
+**Situação:** adotada.
 
-Flyway é o único escritor do schema e o Hibernate usa `ddl-auto=validate`.
-Banco vazio recebe todas as migrations; checksum ou histórico incompatível
-interrompe o startup. Geração automática de schema, scripts manuais fora de
+Flyway é o único escritor do esquema e o Hibernate usa `ddl-auto=validate`.
+Banco vazio recebe todas as migrações; soma de verificação ou histórico incompatível
+interrompe a inicialização. Geração automática de esquema, scripts manuais fora de
 versão e H2 foram rejeitados.
 
 ## ADR-004 — Consistência explícita nas mutações
 
-**Status:** adotada.
+**Situação:** adotada.
 
 Pacientes, agendamentos e consultas usam versão otimista para impedir
-sobrescrita silenciosa. As mutações da agenda adquirem um lock pessimista sobre
-um calendário singleton antes de consultar conflitos e gravar. Intervalos são
+sobrescrita silenciosa. As mutações da agenda adquirem um bloqueio pessimista sobre
+uma instância única do calendário antes de consultar conflitos e gravar. Intervalos são
 semiabertos.
 
-Lock distribuído, fila externa e granularidade por médico foram rejeitados: há
+Bloqueio distribuído, fila externa e granularidade por médico foram rejeitados: há
 um médico, uma réplica e um calendário no escopo aprovado.
 
 ## ADR-005 — Imutabilidade clínica e auditoria transacional
 
-**Status:** adotada.
+**Situação:** adotada.
 
-Consulta finalizada não é editada; correções entram como adendos append-only.
+Consulta finalizada não é editada; correções entram como adendos imutáveis.
 Eventos de auditoria são gravados na mesma transação da mutação correspondente
-e não carregam conteúdo clínico. Event sourcing e CQRS foram rejeitados: o
+e não carregam conteúdo clínico. Registro de eventos como fonte e CQRS foram rejeitados: o
 banco relacional continua sendo a fonte de verdade e a auditoria não recompõe
 estado.
 
-## ADR-006 — Metadado relacional e binário em filesystem privado
+## ADR-006 — Metadado relacional e binário em sistema de arquivos privado
 
-**Status:** adotada.
+**Situação:** adotada.
 
-Metadados e hash SHA-256 ficam no PostgreSQL; binários ficam em diretório/PVC
-privado. Download passa pela API autenticada. Remoção mantém uma lápide e
-suporta recuperação da limpeza quando filesystem e transação não podem ser
+Metadados e resumo SHA-256 ficam no PostgreSQL; binários ficam em diretório/PVC
+privado. O baixamento passa pela API autenticada. A remoção mantém uma lápide e
+suporta recuperação da limpeza quando sistema de arquivos e transação não podem ser
 atômicos.
 
 Armazenamento de objetos, volume compartilhado, exposição direta de arquivos e
 binário dentro do PostgreSQL foram rejeitados por ampliarem a infraestrutura ou
 o acoplamento sem necessidade acadêmica.
 
-## ADR-007 — Sessão server-side, cookie e CSRF
+## ADR-007 — Sessão no servidor, cookie e CSRF
 
-**Status:** adotada.
+**Situação:** adotada.
 
 O único médico autentica por sessão. `JSESSIONID` é `HttpOnly`, `SameSite=Lax` e
-`Secure` em HTTPS; CSRF usa double-submit cookie/header provido pelo Spring
-Security. Tokens bearer/JWT, OAuth/OIDC e login de paciente foram rejeitados por
+`Secure` em HTTPS; o CSRF usa envio duplo por cookie/cabeçalho provido pelo Spring
+Security. Tokens bearer/JWT, OAuth/OIDC e autenticação de paciente foram rejeitados por
 não existirem identidades ou integrações que os justifiquem neste MVP.
 
-## ADR-008 — Problem Details e correlation ID
+## ADR-008 — Problem Details e identificador de correlação
 
-**Status:** adotada.
+**Situação:** adotada.
 
 Erros públicos usam `application/problem+json`, tipos `urn:problem:*` e
 `correlationId`. Respostas e logs evitam segredo, conteúdo clínico e detalhes
-internos. Um envelope de erro proprietário e stack traces públicos foram
+internos. Um envelope de erro proprietário e rastreamentos de pilha públicos foram
 rejeitados.
 
-## ADR-009 — Deploy Kubernetes local mínimo
+## ADR-009 — Implantação Kubernetes local mínima
 
-**Status:** adotada.
+**Situação:** adotada.
 
-A API usa imagem multi-stage não root, `Deployment` de uma réplica com
+A API usa imagem de múltiplos estágios sem privilégios de superusuário,
+`Deployment` de uma réplica com
 `Recreate` e PVC `ReadWriteOnce`. PostgreSQL 18 usa `StatefulSet` de uma réplica
 e PVC separado. Ambos usam `ClusterIP`; somente o Traefik recebe tráfego da
 máquina e termina TLS local.
 
 Docker Compose, Helm, Kustomize, operadores, HPA, múltiplas réplicas, GitOps,
-cloud, banco gerenciado, domínio público e CA pública foram rejeitados pelo
+nuvem, banco gerenciado, domínio público e CA pública foram rejeitados pelo
 escopo acadêmico.
 
 ## Princípios de implementação observados
 
-- application services coordenam regra, transação e auditoria;
-- repositories escondem persistência sem criar CRUD genérico;
-- value objects e policies concentram regras que têm significado próprio;
+- serviços de aplicação coordenam regra, transação e auditoria;
+- repositórios escondem persistência sem criar CRUD genérico;
+- objetos de valor e políticas concentram regras que têm significado próprio;
 - nomes explícitos e fluxos previsíveis têm prioridade sobre abstrações;
-- nenhuma camada é criada apenas para satisfazer um pattern;
-- PVC garante persistência de pod, não backup.
+- nenhuma camada é criada apenas para satisfazer um padrão;
+- PVC garante persistência de pod, não cópia de segurança.

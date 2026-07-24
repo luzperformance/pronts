@@ -22,7 +22,7 @@ preservando o conteúdo original e auditando o acesso.
 ## Fora do escopo
 
 - rascunhos, busca textual, cópia ou exportação do prontuário;
-- relatório, PDF ou endpoint para pacientes;
+- relatório, PDF ou rota para pacientes;
 - edição por meio da projeção de leitura.
 
 ## Critérios de aceitação
@@ -37,10 +37,10 @@ preservando o conteúdo original e auditando o acesso.
 
 ## Estratégia TDD
 
-- seam REST com consultas criadas e finalizadas pela API;
+- fronteira REST com consultas criadas e finalizadas pela API;
 - provar ordem, filtro e exclusão de rascunho pela resposta pública;
 - verificar a regressão N+1 por instrumentação de integração, sem testar
-  repository isoladamente.
+  repositório isoladamente.
 
 ## Requisitos
 

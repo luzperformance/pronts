@@ -11,8 +11,8 @@ seus metadados sem expor caminho físico.
 
 ## Escopo
 
-- criar `Attachment`, migration e ciclo inicial `ACTIVE`;
-- criar contrato pequeno de storage e adapter de filesystem local;
+- criar `Attachment`, migração e ciclo inicial `ACTIVE`;
+- criar contrato pequeno de armazenamento e adaptador de sistema de arquivos local;
 - configurar diretório privado por ambiente e diretório temporário nos testes;
 - implementar `POST /api/v1/patients/{patientId}/attachments`;
 - implementar `GET /api/v1/patients/{patientId}/attachments`;
@@ -21,13 +21,13 @@ seus metadados sem expor caminho físico.
 - verificar conteúdo real, extensão e MIME informado;
 - gerar chave interna aleatória e calcular SHA-256;
 - validar paciente e consulta opcional do mesmo paciente;
-- usar staging e compensação para não deixar arquivo órfão conhecido;
+- usar área temporária e compensação para não deixar arquivo órfão conhecido;
 - auditar `ATTACHMENT_UPLOADED`.
 
 ## Fora do escopo
 
-- download e remoção;
-- antivírus, object storage, renderização de Markdown ou deduplicação por hash;
+- baixamento e remoção;
+- antivírus, armazenamento de objetos, renderização de Markdown ou deduplicação por resumo criptográfico;
 - caminho informado pelo usuário ou diretório público.
 
 ## Critérios de aceitação
@@ -37,16 +37,16 @@ seus metadados sem expor caminho físico.
 - arquivo acima do limite retorna `413` antes da persistência definitiva;
 - nome perigoso permanece apenas metadado e não controla a chave;
 - consulta de outro paciente retorna conflito;
-- upload sem consulta é aceito;
+- envio sem consulta é aceito;
 - lista contém somente ativos e metadados seguros;
-- falha entre storage, banco e auditoria executa compensação verificável.
+- falha entre armazenamento, banco e auditoria executa compensação verificável.
 
 ## Estratégia TDD
 
-- seam REST multipart com fixtures mínimas reais dos quatro tipos;
-- storage local exercitado em diretório temporário, sem mock;
-- casos de compensação usam falha controlada na fronteira externa do storage,
-  não mocks de componentes internos.
+- fronteira REST de múltiplas partes com dados de teste mínimos reais dos quatro tipos;
+- armazenamento local exercitado em diretório temporário, sem duplo;
+- casos de compensação usam falha controlada na fronteira externa do armazenamento,
+  não duplos de componentes internos.
 
 ## Requisitos
 

@@ -1,7 +1,7 @@
 # Especificação do MVP — Primeiro Prontuário
 
-**Status:** rascunho da Fase 2, aguardando aprovação  
-**Objetivo:** backend educacional com qualidade de sistema real  
+**Situação:** rascunho da Fase 2, aguardando aprovação
+**Objetivo:** API educacional com qualidade de sistema real
 **Escopo:** monólito modular em Java e Spring Boot para uso individual por um único mé
 Princípios orientadores:
 
@@ -10,21 +10,21 @@ Princípios orientadores:
 - complexidade acidental será evitada;
 - DRY será aplicado a conhecimento e regras realmente duplicados;
 - abstrações prematuras não serão criadas para remover pequenas semelhanças;
-- controllers não conterão regras de negócio;
+- controladores não conterão regras de negócio;
 - serviços de aplicação existirão quando houver transação, regra, autorização,
   auditoria ou coordenação real;
-- pass-through será tolerado somente em consultas e CRUDs genuinamente simples,
+- mero repasse será tolerado somente em consultas e CRUDs genuinamente simples,
   como uma faixa orientativa de 15% a 25% dos fluxos;
-- design patterns só serão adotados quando resolverem um problema concreto;
+- padrões de projeto só serão adotados quando resolverem um problema concreto;
 - a arquitetura inicial será um monólito modular, sem componentes distribuídos.
 
-### 1.1 Baseline técnico proposto
+### 1.1 Base técnica proposta
 
 - Java 21 LTS;
 - Spring Boot 4.1;
 - Spring MVC;
 - Maven;
-- PostgreSQL 18, sempre no patch suportado mais recente da linha escolhida;
+- PostgreSQL 18, sempre na versão de correção suportada mais recente da linha escolhida;
 - Spring Data JPA;
 - Spring Security com sessão HTTP;
 - Bean Validation;
@@ -38,7 +38,7 @@ A seleção privilegia uma versão LTS madura do Java, um Spring Boot estável e
 PostgreSQL atualmente suportado. As versões exatas de patches serão congeladas
 no primeiro ticket técnico.
 
-## 2. Problem Statement — Problema que o sistema resolve
+## 2. Problema que o sistema resolve
 
 Um médico que trabalha individualmente precisa centralizar os dados cadastrais de
 seus pacientes, organizar a agenda e manter um histórico clínico confiável. Um
@@ -67,22 +67,22 @@ O MVP incluirá:
 10. finalização irreversível da consulta;
 11. prontuário cronológico por paciente;
 12. inclusão de adendos sem alteração do conteúdo original;
-13. upload, listagem, download e remoção controlada de anexos;
+13. envio, listagem, baixamento e remoção controlada de anexos;
 14. vínculo obrigatório do anexo com paciente e opcional com consulta;
 15. auditoria interna das ações sensíveis acordadas;
 16. validação, tratamento uniforme de erros e paginação;
-17. migrations versionadas;
+17. migrações versionadas;
 18. testes unitários de domínio e testes de integração pela API REST;
 19. documentação de execução, configuração e contrato da API.
 
-## 4. Out of Scope — Funcionalidades explicitamente fora do escopo
+## 4. Funcionalidades explicitamente fora do escopo
 
 Não pertencem ao MVP:
 
 - múltiplos médicos, secretárias ou outros perfis operacionais;
-- pacientes com login;
+- pacientes com autenticação;
 - clínica, hospital, unidades, departamentos ou multiempresa;
-- multitenancy;
+- multitenância;
 - CRM, leads, funil comercial ou consultas de venda;
 - prescrições, atestados e solicitações de exames;
 - assinatura digital;
@@ -94,7 +94,7 @@ Não pertencem ao MVP:
 - cobrança, pagamentos, faturamento ou convênios integrados;
 - telemedicina;
 - integração com laboratórios, operadoras ou padrões hospitalares;
-- aplicativo frontend;
+- aplicativo de interface web;
 - microserviços, Kafka, filas, Kubernetes ou cache distribuído;
 - busca textual dentro do conteúdo clínico;
 - antivírus automatizado para anexos;
@@ -128,8 +128,8 @@ O médico não pode:
 
 ### 5.2 Acesso técnico
 
-Operações de infraestrutura, banco e backup não formam um perfil de negócio nem
-terão endpoints administrativos no MVP. Credenciais de infraestrutura ficarão
+Operações de infraestrutura, banco e cópia de segurança não formam um perfil de negócio nem
+terão rotas administrativas no MVP. Credenciais de infraestrutura ficarão
 fora da aplicação e fora do repositório.
 
 ## 6. Requisitos funcionais
@@ -140,7 +140,7 @@ fora da aplicação e fora do repositório.
 - **RF-002:** O sistema deve manter autenticação por sessão HTTP segura.
 - **RF-003:** O sistema deve permitir encerramento explícito da sessão.
 - **RF-004:** O sistema deve informar a identidade da sessão atual.
-- **RF-005:** Todos os endpoints de negócio devem exigir autenticação.
+- **RF-005:** Todas as rotas de negócio devem exigir autenticação.
 - **RF-006:** Sucessos e falhas de autenticação devem ser auditados sem registrar
   a senha.
 
@@ -158,7 +158,7 @@ fora da aplicação e fora do repositório.
 - **RF-013:** O sistema deve pesquisar pacientes por nome da mãe.
 - **RF-014:** O sistema deve pesquisar pacientes por CPF.
 - **RF-015:** O sistema deve pesquisar pacientes por telefone ou e-mail.
-- **RF-016:** O sistema deve filtrar pacientes por status.
+- **RF-016:** O sistema deve filtrar pacientes por estado.
 - **RF-017:** A listagem de pacientes deve ser paginada e possuir ordenação
   determinística.
 
@@ -213,28 +213,29 @@ fora da aplicação e fora do repositório.
 - **RF-046:** Todo anexo deve estar vinculado a um paciente existente.
 - **RF-047:** Um anexo pode, opcionalmente, estar vinculado a uma consulta do
   mesmo paciente.
-- **RF-048:** O sistema deve armazenar metadados, tamanho, tipo detectado e hash
+- **RF-048:** O sistema deve armazenar metadados, tamanho, tipo detectado e resumo criptográfico
   SHA-256 do anexo.
 - **RF-049:** O sistema deve listar anexos ativos de um paciente.
 - **RF-050:** O sistema deve consultar metadados de um anexo.
-- **RF-051:** O sistema deve disponibilizar download autenticado do conteúdo.
+- **RF-051:** O sistema deve disponibilizar baixamento autenticado do conteúdo.
 - **RF-052:** O sistema deve remover logicamente o anexo mediante justificativa,
   apagar seu binário e preservar uma lápide de metadados para auditoria.
-- **RF-053:** Inclusão, download e remoção de anexos devem deixar evento de
+- **RF-053:** Inclusão, baixamento e remoção de anexos devem deixar evento de
   auditoria.
 
 ### 6.6 Auditoria
 
-- **RF-054:** O sistema deve registrar eventos de auditoria de maneira
-  append-only.
+- **RF-054:** O sistema deve registrar eventos de auditoria de modo imutável,
+  permitindo apenas inserções.
 - **RF-055:** Cada evento deve registrar ator, ação, alvo, instante, resultado e
   identificador de correlação.
-- **RF-056:** Devem ser auditados login, falha de login, logout, criação e
-  alteração de paciente, mudança de status, visualização de prontuário,
+- **RF-056:** Devem ser auditadas a autenticação, a falha de autenticação, o
+  encerramento de sessão, a criação e alteração de paciente, mudança de estado,
+  visualização de prontuário,
   finalização de consulta, inclusão de adendo, operações de anexo e criação,
   alteração, transição ou cancelamento de agendamento.
 - **RF-057:** O evento de auditoria não deve armazenar senha, conteúdo clínico,
-  conteúdo do arquivo ou payload HTTP completo.
+  conteúdo do arquivo ou carga útil HTTP completa.
 - **RF-058:** O MVP deve permitir consulta paginada e somente leitura dos eventos
   de auditoria, sem gerar relatório ou arquivo de exportação.
 
@@ -244,7 +245,7 @@ fora da aplicação e fora do repositório.
   em Problem Details.
 - **RF-060:** O sistema deve validar corpo, parâmetros, paginação e transições de
   estado.
-- **RF-061:** O sistema deve expor apenas um endpoint operacional de saúde sem
+- **RF-061:** O sistema deve expor apenas uma rota operacional de saúde sem
   dados sensíveis.
 - **RF-062:** O sistema deve versionar a API a partir de `/api/v1`.
 - **RF-063:** O sistema deve disponibilizar documentação do contrato REST no
@@ -261,21 +262,21 @@ fora da aplicação e fora do repositório.
   Duplicação pequena de apresentação ou mapeamento pode ser aceita até que haja
   evidência de uma abstração estável.
 - **RNF-004 — Coesão:** Código deve ser organizado por funcionalidade de negócio,
-  e não em grandes pastas globais de controllers, services e repositories.
+  e não em grandes pastas globais de controladores, serviços e repositórios.
 - **RNF-005 — Acoplamento:** Dependências entre módulos devem ser unidirecionais
   e usar apenas contratos públicos mínimos.
-- **RNF-006 — Pass-through:** Métodos sem decisão, transformação, coordenação ou
+- **RNF-006 — Mero repasse:** Métodos sem decisão, transformação, coordenação ou
   regra devem ser exceção consciente; a faixa de 15% a 25% é uma heurística de
   revisão, não uma métrica automática.
-- **RNF-007 — Segurança:** Nenhum endpoint de negócio deve ser anônimo.
+- **RNF-007 — Segurança:** Nenhuma rota de negócio deve ser anônima.
 - **RNF-008 — Transporte:** Produção deve operar exclusivamente atrás de HTTPS.
 - **RNF-009 — Sessão:** Cookies devem usar `HttpOnly`, `Secure` em produção e
-  política `SameSite` compatível com o frontend.
+  política `SameSite` compatível com a interface web.
 - **RNF-010 — CSRF:** Autenticação por cookie deve manter proteção CSRF para
   operações mutáveis.
-- **RNF-011 — Senhas:** Senhas devem ser armazenadas somente como hash adaptativo
-  com salt.
-- **RNF-012 — Segredos:** Senhas, chaves e credenciais não podem ser commitidas.
+- **RNF-011 — Senhas:** Senhas devem ser armazenadas somente como resumo
+  criptográfico adaptativo com sal criptográfico aleatório.
+- **RNF-012 — Segredos:** Senhas, chaves e credenciais não podem ser versionadas.
 - **RNF-013 — Privacidade:** Logs comuns não devem conter dados clínicos, CPF,
   anexos ou corpos de requisição.
 - **RNF-014 — Auditoria:** Registros de auditoria não podem ser atualizados nem
@@ -283,17 +284,17 @@ fora da aplicação e fora do repositório.
 - **RNF-015 — Integridade:** Consulta finalizada e adendo devem ser imutáveis.
 - **RNF-016 — Concorrência:** Entidades mutáveis relevantes devem detectar
   atualizações concorrentes e rejeitar perda silenciosa de dados.
-- **RNF-017 — Banco:** O schema deve ser administrado exclusivamente por Flyway;
+- **RNF-017 — Banco:** O esquema deve ser administrado exclusivamente por Flyway;
   JPA deve apenas validá-lo.
 - **RNF-018 — Banco real em testes:** Testes de persistência devem usar
   PostgreSQL, não H2.
 - **RNF-019 — Arquivos:** Binários devem ficar fora de diretório público e nunca
   devem ser servidos diretamente pelo servidor web.
-- **RNF-020 — Upload:** O limite inicial por arquivo será de 10 MiB.
+- **RNF-020 — Envio:** O limite inicial por arquivo será de 10 MiB.
 - **RNF-021 — Tipos:** O tipo do arquivo deve ser verificado pelo conteúdo,
   complementado por extensão e MIME informado.
-- **RNF-022 — Markdown:** Markdown deve ser tratado como download textual UTF-8;
-  o backend não renderizará HTML do conteúdo no MVP.
+- **RNF-022 — Markdown:** Markdown deve ser tratado como baixamento textual UTF-8;
+  a API não renderizará HTML do conteúdo no MVP.
 - **RNF-023 — Desempenho:** Listagens devem ser paginadas e evitar consultas N+1.
 - **RNF-024 — Capacidade:** O MVP deve atender confortavelmente um único médico,
   milhares de pacientes e dezenas de milhares de consultas, sem meta de escala
@@ -303,22 +304,23 @@ fora da aplicação e fora do repositório.
   `America/Sao_Paulo`.
 - **RNF-026 — Datas civis:** Data de nascimento deve ser tratada como data sem
   horário.
-- **RNF-027 — Erros:** Respostas não devem expor stack trace, SQL ou detalhes de
+- **RNF-027 — Erros:** Respostas não devem expor rastreamento de pilha, SQL ou detalhes de
   infraestrutura.
-- **RNF-028 — Observabilidade:** Cada requisição deve receber um correlation ID;
+- **RNF-028 — Observabilidade:** Cada requisição deve receber um identificador de correlação;
   logs devem ser estruturados e sanitizados.
 - **RNF-029 — Testabilidade:** Tempo e armazenamento de arquivos devem ser
   dependências injetáveis nas fronteiras justificadas.
 - **RNF-030 — Testes:** Regras complexas devem possuir testes unitários de
   domínio e cada fluxo público deve possuir teste de integração REST.
-- **RNF-031 — TDD:** Cada fatia deve seguir red → green, um comportamento por
+- **RNF-031 — TDD:** Cada fatia deve seguir vermelho → verde, um comportamento por
   ciclo, sem escrever toda a suíte antes da implementação.
-- **RNF-032 — Qualidade:** O build deve executar testes, análise estática básica e
-  verificação de formatação.
+- **RNF-032 — Qualidade:** O processo de construção deve executar testes, análise
+  estática básica e verificação de formatação.
 - **RNF-033 — Portabilidade:** A aplicação deve ser configurável por variáveis de
   ambiente e iniciar de forma reproduzível.
-- **RNF-034 — Backup:** Uma instalação real deve incluir backup conjunto do banco
-  e dos binários; isso será documentado, mas automação avançada fica fora do MVP.
+- **RNF-034 — Cópia de segurança:** Uma instalação real deve incluir cópia de
+  segurança conjunta do banco e dos binários; isso será documentado, mas
+  automação avançada fica fora do MVP.
 - **RNF-035 — Dados de demonstração:** Ambientes de estudo e portfólio devem usar
   somente dados fictícios ou anonimizados.
 
@@ -388,7 +390,7 @@ fora da aplicação e fora do repositório.
   como caminho físico.
 - **RN-043:** Downloads sempre passam por autorização da aplicação.
 - **RN-044:** Remoção de anexo exige justificativa.
-- **RN-045:** Após remoção, o binário fica indisponível; metadados mínimos, hash,
+- **RN-045:** Após remoção, o binário fica indisponível; metadados mínimos, resumo criptográfico,
   autor, justificativa e instante permanecem.
 - **RN-046:** Evento de auditoria não pode conter o texto do prontuário ou o
   binário do anexo.
@@ -399,7 +401,7 @@ fora da aplicação e fora do repositório.
   e tentativa de editar registro finalizado devem retornar conflito, não erro
   interno.
 
-## 9. User Stories e principais casos de uso
+## 9. Histórias de usuário e principais casos de uso
 
 ### 9.1 Histórias de usuário
 
@@ -445,7 +447,7 @@ fora da aplicação e fora do repositório.
     para preservar seu contexto.
 23. Como médico, quero baixar um anexo com autenticação, para que ele não seja
     publicamente acessível.
-24. Como médico, quero remover um anexo com justificativa, para corrigir um upload
+24. Como médico, quero remover um anexo com justificativa, para corrigir um envio
     indevido sem apagar o rastro.
 25. Como responsável pelos dados, quero que acessos e alterações sensíveis sejam
     auditados, para haver responsabilização.
@@ -453,10 +455,10 @@ fora da aplicação e fora do repositório.
     uma ação sensível e quando, sem gerar relatórios no MVP.
 27. Como desenvolvedor júnior, quero módulos com nomes e limites claros, para
     conseguir compreender e evoluir o sistema.
-28. Como desenvolvedor, quero migrations reproduzíveis, para obter o mesmo schema
+28. Como desenvolvedor, quero migrações reproduzíveis, para obter o mesmo esquema
     em todos os ambientes.
 29. Como desenvolvedor, quero erros REST uniformes, para integrar o futuro
-    frontend sem tratar respostas arbitrárias.
+    interface web sem tratar respostas arbitrárias.
 30. Como desenvolvedor, quero testes de comportamento em PostgreSQL real, para
     reduzir diferenças entre teste e execução.
 31. Como avaliador de portfólio, quero ver decisões simples e justificadas, para
@@ -471,7 +473,7 @@ fora da aplicação e fora do repositório.
 - **UC-003 — Pesquisar paciente:** combina filtros opcionais, pagina e ordena.
 - **UC-004 — Atualizar paciente:** detecta concorrência, valida alterações e
   registra campos cadastrais modificados sem copiar seus valores sensíveis.
-- **UC-005 — Alterar status do paciente:** inativa ou reativa sem apagar histórico.
+- **UC-005 — Alterar estado do paciente:** inativa ou reativa sem apagar histórico.
 - **UC-006 — Agendar consulta:** valida paciente, duração, passado, bloqueio e
   sobreposição.
 - **UC-007 — Reagendar consulta:** aplica as mesmas regras de conflito e estado.
@@ -483,7 +485,7 @@ fora da aplicação e fora do repositório.
   agendamento relacionado e audita atomicamente.
 - **UC-013 — Ler prontuário:** retorna consultas finalizadas e adendos em ordem.
 - **UC-014 — Incluir adendo:** acrescenta correção imutável e auditada.
-- **UC-015 — Enviar anexo:** valida tipo, tamanho, vínculo, nome seguro e hash.
+- **UC-015 — Enviar anexo:** valida tipo, tamanho, vínculo, nome seguro e resumo criptográfico.
 - **UC-016 — Baixar anexo:** autoriza e transmite sem revelar caminho físico.
 - **UC-017 — Remover anexo:** exige justificativa, apaga binário e preserva
   lápide auditável.
@@ -500,8 +502,8 @@ fora da aplicação e fora do repositório.
   identificador existe.
 - Recurso protegido sem sessão retorna `401` no contrato Problem Details.
 - Operação sem autorização retorna `403`.
-- Logout invalida a sessão.
-- Sucesso, falha e logout geram auditoria sem senha.
+- Encerramento invalida a sessão.
+- Autenticação bem-sucedida, falha de autenticação e encerramento geram auditoria sem senha.
 
 ### CA-002 — Cadastro e consulta de paciente
 
@@ -521,14 +523,14 @@ fora da aplicação e fora do repositório.
 - Resultado é paginado, com limite máximo e ordenação determinística.
 - Uma busca sem resultados retorna página vazia, não `404`.
 
-### CA-004 — Alteração e status de paciente
+### CA-004 — Alteração e estado de paciente
 
 - Alteração válida preserva o identificador e incrementa a versão.
 - Duas alterações concorrentes não sobrescrevem dados silenciosamente.
 - Inativação não remove paciente, consultas, anexos ou agenda anterior.
 - Novo agendamento ou nova consulta para inativo retorna conflito.
 - Reativação volta a permitir novos registros.
-- Alteração e mudança de status são auditadas.
+- Alteração e mudança de estado são auditadas.
 
 ### CA-005 — Criação e consulta de agendamento
 
@@ -598,26 +600,26 @@ fora da aplicação e fora do repositório.
 - Extensão falsa ou conteúdo inválido é rejeitado.
 - Nome com caminho ou caracteres perigosos não controla o caminho físico.
 - Consulta de origem de outro paciente é rejeitada.
-- Upload sem consulta de origem é aceito.
-- Hash e metadados são persistidos.
+- Envio sem consulta de origem é aceito.
+- Resumo criptográfico e metadados são persistidos.
 - Falha entre armazenamento e persistência não deixa arquivo órfão conhecido.
 - Inclusão gera auditoria.
 
-### CA-013 — Listagem e download de anexo
+### CA-013 — Listagem e baixamento de anexo
 
 - Listagem retorna apenas anexos ativos por padrão.
 - Conteúdo só pode ser baixado por sessão autenticada.
 - Caminho físico nunca aparece na resposta.
-- Download usa tipo seguro e `Content-Disposition` de anexo.
-- Markdown não é renderizado pelo backend.
-- Download gera auditoria.
+- Baixamento usa tipo seguro e `Content-Disposition` de anexo.
+- Markdown não é renderizado pela API.
+- Baixamento gera auditoria.
 
 ### CA-014 — Remoção de anexo
 
 - Justificativa vazia é rejeitada.
 - Após remoção, o conteúdo retorna `404` ou `410` segundo a decisão de contrato.
 - O binário é apagado.
-- Metadados mínimos e hash permanecem como lápide.
+- Metadados mínimos e resumo criptográfico permanecem como lápide.
 - Nova remoção não apaga a lápide nem duplica efeitos.
 - Remoção gera auditoria.
 
@@ -626,18 +628,18 @@ fora da aplicação e fora do repositório.
 - Somente uma sessão autenticada pode consultar eventos.
 - A listagem é paginada e ordenada do evento mais recente para o mais antigo.
 - Período, ação, resultado, tipo de alvo e identificador podem ser filtrados.
-- O retorno não contém conteúdo clínico, senha, payload ou binário.
+- O retorno não contém conteúdo clínico, senha, carga útil ou binário.
 - Não há operação REST de alteração ou exclusão.
 - O MVP não oferece CSV, PDF ou outra exportação.
 
-### CA-016 — Erros, migrations e saúde
+### CA-016 — Erros, migrações e saúde
 
-- Erros conhecidos possuem status, tipo, título, detalhe seguro, correlation ID e
+- Erros conhecidos possuem código de estado, tipo, título, detalhe seguro, identificador de correlação e
   erros por campo quando aplicável.
-- Erro inesperado retorna `500` sem stack trace.
-- A aplicação inicia em banco vazio aplicando migrations em ordem.
-- Schema incompatível impede inicialização.
-- O endpoint de saúde não expõe credenciais nem dados clínicos.
+- Erro inesperado retorna `500` sem rastreamento de pilha.
+- A aplicação inicia em banco vazio aplicando migrações em ordem.
+- Esquema incompatível impede inicialização.
+- A rota de saúde não expõe credenciais nem dados clínicos.
 
 ## 11. Modelo inicial de entidades e relacionamentos
 
@@ -651,10 +653,10 @@ fora da aplicação e fora do repositório.
 | ScheduleBlock | Intervalo indisponível sem paciente | id, startsAt, endsAt, reason, createdAt |
 | Consultation | Registro clínico mutável enquanto rascunho e imutável após finalização | id, patientId, appointmentId opcional, clinicalDate, status, seis campos clínicos, finalizedAt, version |
 | Addendum | Acréscimo imutável a uma consulta finalizada | id, consultationId, content, reason, authorId, createdAt |
-| Attachment | Metadados e ciclo de vida de documento | id, patientId, consultationId opcional, originalName, storageKey, mediaType, size, sha256, status, deletion metadata |
-| AuditEvent | Registro append-only de ação sensível | id, actorId opcional, action, targetType, targetId, outcome, occurredAt, correlationId, safeMetadata |
+| Attachment | Metadados e ciclo de vida de documento | id, patientId, consultationId opcional, originalName, storageKey, mediaType, size, sha256, status, metadados de remoção |
+| AuditEvent | Registro imutável de ação sensível | id, actorId opcional, action, targetType, targetId, outcome, occurredAt, correlationId, safeMetadata |
 
-### 11.2 Value objects e enums
+### 11.2 Objetos de valor e enumerações
 
 - `Cpf`: normalização, validação e forma canônica;
 - `AppointmentDuration`: conjunto fechado de 15, 30, 45 ou 60 minutos;
@@ -666,7 +668,7 @@ fora da aplicação e fora do repositório.
 - `AttachmentStatus`: `ACTIVE`, `REMOVED`;
 - `AuditOutcome`: `SUCCESS`, `FAILURE`.
 
-Não serão criados value objects para cada string. Eles serão usados apenas onde
+Não serão criados objetos de valor para cada texto. Eles serão usados apenas onde
 houver invariantes e comportamento próprios.
 
 ### 11.3 Relacionamentos
@@ -710,7 +712,7 @@ Transições:
 - `CONFIRMED → NO_SHOW`.
 
 `COMPLETED`, `CANCELLED` e `NO_SHOW` são terminais. A pequena quantidade de
-estados será modelada com enum e regras explícitas, não com o pattern State.
+estados será modelada com enumeração e regras explícitas, não com o padrão Estado.
 
 ### 12.3 Consulta clínica
 
@@ -736,14 +738,14 @@ estados será modelada com enum e regras explícitas, não com o pattern State.
 - Um evento nasce definitivo.
 - Não existem operações de edição ou remoção pela aplicação.
 
-## 13. Endpoints REST sugeridos
+## 13. Rotas REST sugeridas
 
-Todos os endpoints, exceto login, proteção CSRF aplicável e saúde, exigem sessão
+Todas as rotas, exceto autenticação, proteção CSRF aplicável e saúde, exigem sessão
 autenticada. Os nomes são contratos propostos, não implementação.
 
 ### 13.1 Autenticação
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
 | POST | `/api/v1/auth/login` | Criar sessão |
 | POST | `/api/v1/auth/logout` | Encerrar sessão |
@@ -752,7 +754,7 @@ autenticada. Os nomes são contratos propostos, não implementação.
 
 ### 13.2 Pacientes
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
 | POST | `/api/v1/patients` | Cadastrar paciente |
 | GET | `/api/v1/patients` | Pesquisar e paginar por filtros |
@@ -761,11 +763,11 @@ autenticada. Os nomes são contratos propostos, não implementação.
 | PATCH | `/api/v1/patients/{patientId}/status` | Ativar ou inativar |
 
 Filtros previstos em `GET /patients`: `fullName`, `motherName`, `cpf`, `phone`,
-`email`, `status`, `page`, `size` e ordenação permitida por lista branca.
+`email`, `status`, `page`, `size` e ordenação permitida por lista de permissões.
 
 ### 13.3 Agenda
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
 | POST | `/api/v1/appointments` | Agendar consulta |
 | GET | `/api/v1/appointments` | Listar por período, estado e paciente |
@@ -781,7 +783,7 @@ Agendamento não terá `DELETE`; cancelamento é uma transição auditável.
 
 ### 13.4 Consultas e prontuário
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
 | POST | `/api/v1/patients/{patientId}/consultations` | Criar rascunho |
 | GET | `/api/v1/consultations/{consultationId}` | Consultar consulta |
@@ -794,9 +796,9 @@ Filtros previstos no prontuário: `from`, `to`, `page` e `size`.
 
 ### 13.5 Anexos
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
-| POST | `/api/v1/patients/{patientId}/attachments` | Upload multipart com consulta opcional |
+| POST | `/api/v1/patients/{patientId}/attachments` | Envio de múltiplas partes com consulta opcional |
 | GET | `/api/v1/patients/{patientId}/attachments` | Listar anexos ativos |
 | GET | `/api/v1/attachments/{attachmentId}` | Consultar metadados |
 | GET | `/api/v1/attachments/{attachmentId}/content` | Baixar conteúdo |
@@ -804,7 +806,7 @@ Filtros previstos no prontuário: `from`, `to`, `page` e `size`.
 
 ### 13.6 Auditoria
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
 | GET | `/api/v1/audit-events` | Consultar trilha paginada e somente leitura |
 
@@ -813,7 +815,7 @@ Filtros previstos: `from`, `to`, `action`, `outcome`, `targetType`, `targetId`,
 
 ### 13.7 Operação
 
-| Método | Endpoint | Finalidade |
+| Método | Rota | Finalidade |
 |---|---|---|
 | GET | `/actuator/health` | Verificar disponibilidade sem expor detalhes |
 
@@ -821,7 +823,7 @@ Filtros previstos: `from`, `to`, `action`, `outcome`, `targetType`, `targetId`,
 
 - `201 Created` para criação;
 - `200 OK` para consulta e alteração com resposta;
-- `204 No Content` para logout e remoções adequadas;
+- `204 No Content` para encerramento de sessão e remoções adequadas;
 - `400 Bad Request` para formato ou validação;
 - `401 Unauthorized` para ausência ou falha de autenticação;
 - `403 Forbidden` para operação autenticada não permitida;
@@ -836,20 +838,20 @@ Filtros previstos: `from`, `to`, `action`, `outcome`, `targetType`, `targetId`,
 O código será organizado por módulo de negócio:
 
 - `auth`: autenticação, conta única e segurança de sessão;
-- `patient`: cadastro, status e pesquisa;
+- `patient`: cadastro, estado e pesquisa;
 - `schedule`: agendamentos, intervalos, bloqueios e lembretes;
 - `medicalrecord`: rascunhos, finalização, prontuário e adendos;
 - `attachment`: metadados, validação e armazenamento;
-- `audit`: gravação append-only de eventos;
-- `shared`: somente contrato de erro, correlation ID e tipos técnicos realmente
+- `audit`: gravação imutável de eventos;
+- `shared`: somente contrato de erro, identificador de correlação e tipos técnicos realmente
   compartilhados;
 - `configuration`: composição e configuração técnica.
 
 Dentro de um módulo, subpacotes serão criados somente quando houver conteúdo:
 
-- `api`: controller, DTO de entrada e DTO de saída;
+- `api`: controlador, DTO de entrada e DTO de saída;
 - `application`: casos de uso, transações e coordenação;
-- `domain`: entidades, value objects e regras;
+- `domain`: entidades, objetos de valor e regras;
 - `infrastructure`: JPA ou adaptadores externos quando realmente necessários.
 
 Não serão criadas quatro camadas vazias para cada funcionalidade. Um módulo
@@ -860,42 +862,42 @@ volume justificar.
 
 - `api` chama `application`;
 - `application` coordena domínio, persistência e auditoria;
-- `domain` não depende de Spring MVC, DTOs HTTP ou filesystem;
+- `domain` não depende de Spring MVC, DTOs HTTP ou sistema de arquivos;
 - `infrastructure` implementa fronteiras técnicas;
 - `audit` não depende dos módulos auditados;
 - `shared` não pode virar depósito de classes sem dono;
 - entidades JPA não são serializadas como respostas REST;
-- controllers não acessam JPA diretamente.
+- controladores não acessam JPA diretamente.
 
-### 14.2 MVC e pass-through
+### 14.2 MVC e mero repasse
 
 MVC será usado na fronteira HTTP:
 
-- Controller: protocolo, autenticação disponível, validação de entrada e tradução
+- Controlador: protocolo, autenticação disponível, validação de entrada e tradução
   de resposta;
-- Application service/use case: transação, coordenação, autorização contextual,
+- Serviço de aplicação/caso de uso: transação, coordenação, autorização contextual,
   auditoria e regras que atravessam agregados;
-- Domain: invariantes e comportamento da própria entidade/value object;
-- Repository/adapter: persistência ou I/O.
+- Domínio: invariantes e comportamento da própria entidade/objeto de valor;
+- Repositório/adaptador: persistência ou E/S.
 
-Para leituras simples, um query service poderá ser curto. Não será adicionada
+Para leituras simples, um serviço de consulta poderá ser curto. Não será adicionada
 lógica artificial para que ele pareça “profundo”. Em contrapartida, operações
-como finalização, reagendamento, upload e adendo não podem ser cadeias
-controller → service → repository sem regras explícitas.
+como finalização, reagendamento, envio e adendo não podem ser cadeias
+controlador → serviço → repositório sem regras explícitas.
 
 ## 15. Autenticação, autorização, auditoria e proteção de dados
 
 ### 15.1 Autenticação
 
-- sessão HTTP server-side em vez de JWT;
+- sessão HTTP mantida no servidor em vez de JWT;
 - uma conta de médico persistida no banco;
-- bootstrap inicial por configuração segura, sem endpoint público de registro;
+- preparação inicial por configuração segura, sem rota pública de registro;
 - senha codificada com algoritmo adaptativo provido pelo Spring Security;
 - resposta genérica para credenciais inválidas;
-- renovação de session ID após login;
-- logout invalida sessão;
+- renovação do identificador de sessão após autenticação;
+- encerramento invalida sessão;
 - sessões expiram por inatividade;
-- proteção contra session fixation;
+- proteção contra fixação de sessão;
 - cookie seguro em produção.
 
 JWT foi rejeitado no MVP porque não há múltiplos consumidores, federação ou
@@ -906,8 +908,8 @@ armazenamento inseguro no navegador.
 
 - somente `ROLE_DOCTOR`;
 - negação padrão;
-- saúde e login são as únicas exceções anônimas;
-- sem autorização por tenant ou por médico, pois existe um único médico;
+- saúde e autenticação são as únicas exceções anônimas;
+- sem autorização por organização ou por médico, pois existe um único médico;
 - regras de estado continuam no domínio/aplicação, não em anotações de segurança.
 
 ### 15.3 Auditoria
@@ -933,7 +935,7 @@ para evitar comportamento invisível e risco de a mutação confirmar sem audito
 - dados reais não serão usados no portfólio;
 - HTTPS obrigatório em qualquer ambiente exposto;
 - PostgreSQL e volume de anexos não serão publicados diretamente;
-- banco, volume e backups devem usar criptografia de infraestrutura quando
+- banco, volume e cópias de segurança devem usar criptografia de infraestrutura quando
   implantados;
 - secrets serão externos ao repositório;
 - logs serão sanitizados;
@@ -941,38 +943,39 @@ para evitar comportamento invisível e risco de a mutação confirmar sem audito
 - anexos usarão chave interna aleatória e diretório privado;
 - nomes informados pelo usuário nunca comporão caminho físico;
 - acesso a anexos será mediado pela aplicação;
-- CORS será fechado por padrão e configurará apenas a origem do futuro frontend;
+- CORS será fechado por padrão e configurará apenas a origem da futura interface web;
 - paginação terá limites máximos;
 - erros não revelarão existência de dados além do necessário.
 
 Criptografia de cada campo clínico na aplicação foi adiada: sem gestão correta de
 chaves ela cria uma falsa sensação de segurança e aumenta muito a complexidade.
-Uma implantação real exigirá análise de ameaças, LGPD, retenção, backup, rotação
-de segredos e recuperação de desastre antes de receber dados reais.
+Uma implantação real exigirá análise de ameaças, LGPD, retenção, cópias de
+segurança, rotação de segredos e recuperação de desastre antes de receber dados
+reais.
 
-## 16. Testing Decisions — Estratégia de testes
+## 16. Decisões de testes — Estratégia de testes
 
-### 16.1 Seams propostos — exigem aprovação
+### 16.1 Fronteiras propostas — exigem aprovação
 
-Serão usados somente dois seams:
+Serão usadas somente duas fronteiras:
 
-1. **Seam REST:** a API HTTP autenticada é a fronteira principal. Testes de
-   integração sobem a aplicação, aplicam migrations e usam PostgreSQL real via
-   Testcontainers. Eles verificam resposta e comportamento por endpoints
-   públicos, inclusive segurança, persistência, concorrência e auditoria
+1. **Fronteira REST:** a API HTTP autenticada é a fronteira principal. Testes de
+   integração sobem a aplicação, aplicam migrações e usam PostgreSQL real via
+   Testcontainers. Eles verificam resposta e comportamento por rotas públicas,
+   inclusive segurança, persistência, concorrência e auditoria
    consultável pela própria API.
-2. **Seam de domínio:** métodos públicos de entidades e value objects serão
+2. **Fronteira de domínio:** métodos públicos de entidades e objetos de valor serão
    testados sem Spring apenas quando contiverem regra substancial, como CPF,
    intervalos, transições, finalização e adendos.
 
-Não haverá seam separado para controller, service e repository. Serviços não
-serão unitariamente testados por meio de mocks dos próprios colaboradores. O
-adaptador de arquivos será exercitado pelo seam REST usando diretório temporário.
+Não haverá fronteira separada para controlador, serviço e repositório. Serviços não
+serão unitariamente testados por meio de duplos dos próprios colaboradores. O
+adaptador de arquivos será exercitado pela fronteira REST usando diretório temporário.
 
 ### 16.2 O que constitui um bom teste
 
 - descreve comportamento e regra de negócio;
-- usa apenas interface pública do seam;
+- usa apenas interface pública da fronteira;
 - possui resultado esperado independente e explícito;
 - não testa método privado;
 - não verifica quantidade ou ordem de chamadas internas;
@@ -995,27 +998,27 @@ adaptador de arquivos será exercitado pelo seam REST usando diretório temporá
 
 **Testes de integração REST:**
 
-- autenticação, sessão, CSRF e logout;
+- autenticação, sessão, CSRF e encerramento;
 - autorização de todos os módulos;
 - cadastro, busca, paginação, duplicidade e concorrência de paciente;
 - conflitos de agenda, bloqueios, estados e lembretes;
 - rascunho, finalização, imutabilidade, prontuário e adendos;
-- upload, tipo real, limite, download e remoção;
-- migrations em banco vazio;
+- envio, tipo real, limite, baixamento e remoção;
+- migrações em banco vazio;
 - mapeamento de exceções e Problem Details;
 - transações que combinam mutação e auditoria.
 
-**Testes de contrato de migration:**
+**Testes de contrato de migração:**
 
 - inicialização do zero;
-- validação do schema por JPA;
+- validação do esquema por JPA;
 - proibição de `ddl-auto` mutável fora de testes estritamente isolados.
 
 ### 16.4 Ciclo TDD
 
 Para cada ticket e comportamento:
 
-1. escrever um teste no seam aprovado;
+1. escrever um teste na fronteira aprovada;
 2. executar e confirmar a falha pelo motivo esperado;
 3. implementar apenas o suficiente para passar;
 4. executar o conjunto relevante;
@@ -1025,22 +1028,22 @@ Para cada ticket e comportamento:
 Não será usada estratégia horizontal de “escrever todos os testes e depois todo
 o código”.
 
-## 17. Backlog inicial, do simples ao complexo
+## 17. Lista inicial de trabalho, do simples ao complexo
 
-Este backlog ainda não é o conjunto publicado de tickets. Após a aprovação da
-especificação, ele será refinado pela skill `to-tickets` em fatias verticais com
+Esta lista ainda não é o conjunto publicado de tickets. Após a aprovação da
+especificação, ele será refinado pela habilidade `to-tickets` em fatias verticais com
 bloqueios explícitos.
 
 1. **Fundação executável:** iniciar aplicação, conectar PostgreSQL, aplicar a
-   primeira migration e responder saúde.
-2. **Contrato de erros:** retornar Problem Details, correlation ID e validações
+   primeira migração e responder saúde.
+2. **Contrato de erros:** retornar Problem Details, identificador de correlação e validações
    básicas por uma rota real.
-3. **Autenticação completa:** bootstrap seguro, login, sessão, identidade, logout
+3. **Autenticação completa:** preparação segura, autenticação, sessão, identidade, encerramento
    e auditoria de autenticação.
 4. **Cadastrar e consultar paciente:** primeiro fluxo persistente autenticado com
    CPF e auditoria.
 5. **Pesquisar pacientes:** filtros combináveis, paginação e ordenação.
-6. **Atualizar e inativar paciente:** validação, optimistic locking e auditoria.
+6. **Atualizar e inativar paciente:** validação, bloqueio otimista e auditoria.
 7. **Agendar consulta:** duração, cálculo do intervalo, paciente ativo e listagem
    por período.
 8. **Impedir conflitos:** sobreposição de consultas e testes de adjacência.
@@ -1052,19 +1055,19 @@ bloqueios explícitos.
     agendamento e auditoria atômica.
 14. **Ler prontuário cronológico:** paginação, intervalo e auditoria de acesso.
 15. **Adicionar adendo:** correção imutável com justificativa.
-16. **Enviar e listar anexo:** storage privado, validação, hash e vínculo opcional.
-17. **Baixar anexo:** autorização, streaming seguro e auditoria.
+16. **Enviar e listar anexo:** armazenamento privado, validação, resumo criptográfico e vínculo opcional.
+17. **Baixar anexo:** autorização, transmissão contínua segura e auditoria.
 18. **Remover anexo:** justificativa, exclusão do binário e lápide auditável.
 19. **Consultar auditoria:** pesquisa paginada, filtros e garantia de metadados
     mínimos.
-20. **Hardening integrado:** CORS, cookies, CSRF, limites, sanitização e logs.
-21. **Documentação e validação final:** contrato REST, execução local, backup
+20. **Reforço integrado de segurança:** CORS, cookies, CSRF, limites, sanitização e logs.
+21. **Documentação e validação final:** contrato REST, execução local, cópia de segurança
     conceitual e suíte completa.
 
 Cada item deverá caber em um contexto de implementação e entregar comportamento
 demonstrável de ponta a ponta.
 
-## 18. Roadmap
+## 18. Roteiro de evolução
 
 ### 18.1 MVP
 
@@ -1106,13 +1109,13 @@ demonstrável de ponta a ponta.
 - criptografia de campos com serviço real de chaves;
 - múltiplos médicos ou clínica, somente se o produto mudar de objetivo.
 
-Evoluir para múltiplos médicos não será antecipado no schema do MVP. Se essa
+Evoluir para múltiplos médicos não será antecipado no esquema do MVP. Se essa
 necessidade surgir, será tratada como mudança real de produto, não como uma
 coluna `tenant_id` preventiva em todas as tabelas.
 
-## 19. Implementation Decisions — Design patterns
+## 19. Decisões de implementação — Padrões de projeto
 
-### 19.1 Repository, provido por Spring Data JPA
+### 19.1 Repositório, provido por Spring Data JPA
 
 - **Problema concreto:** persistir e consultar agregados sem espalhar EntityManager
   ou SQL pelo código de negócio.
@@ -1124,38 +1127,38 @@ coluna `tenant_id` preventiva em todas as tabelas.
   método de uma interface Spring Data. Um contrato adicional só surgirá quando
   houver isolamento ou semântica real.
 
-### 19.2 Specification para busca combinável
+### 19.2 Especificação para busca combinável
 
-- **Problema concreto:** cinco campos opcionais de paciente, status e paginação
-  gerariam muitas combinações de métodos de repository.
+- **Problema concreto:** cinco campos opcionais de paciente, estado e paginação
+  gerariam muitas combinações de métodos de repositório.
 - **Onde:** pesquisa de pacientes e, se necessário, filtros combinados da agenda.
 - **Por que é melhor que implementação direta:** compõe critérios sem nomes de
   método explosivos ou condicionais SQL duplicados.
 - **Limite:** consultas fixas simples continuam diretas.
 
-### 19.3 Value Object
+### 19.3 Objeto de valor
 
 - **Problema concreto:** CPF, duração e intervalo possuem forma canônica e
-  invariantes que não devem ser repetidas em controllers e services.
+  invariantes que não devem ser repetidas em controladores e serviços.
 - **Onde:** `Cpf`, `AppointmentDuration` e `TimeInterval`.
 - **Por que é melhor que strings e inteiros diretos:** torna estados inválidos
   difíceis de representar e mantém a regra em um único lugar, atendendo DRY.
-- **Limite:** não haverá value object para todo campo textual.
+- **Limite:** não haverá objeto de valor para todo campo textual.
 
-### 19.4 Adapter para armazenamento de anexos
+### 19.4 Adaptador para armazenamento de anexos
 
-- **Problema concreto:** filesystem é I/O externo, exige segurança específica e
-  pode ser substituído por object storage no futuro.
+- **Problema concreto:** sistema de arquivos é E/S externa, exige segurança específica e
+  pode ser substituído por armazenamento de objetos no futuro.
 - **Onde:** um contrato pequeno de armazenamento, com implementação local no MVP.
-- **Por que é melhor que chamadas diretas a arquivos em vários services:** evita
-  espalhar caminhos, limpeza e streaming, permite teste em diretório temporário
+- **Por que é melhor que chamadas diretas a arquivos em vários serviços:** evita
+  espalhar caminhos, limpeza e transmissão contínua, permite teste em diretório temporário
   e cria uma fronteira real.
 - **Limite:** uma única interface terá uma única implementação porque representa
-  fronteira externa concreta; não será criada uma hierarquia genérica de storage.
+  fronteira externa concreta; não será criada uma hierarquia genérica de armazenamento.
 
-### 19.5 Dependency Injection para fronteiras variáveis
+### 19.5 Injeção de dependência para fronteiras variáveis
 
-- **Problema concreto:** horário atual e filesystem tornam testes não
+- **Problema concreto:** horário atual e sistema de arquivos tornam testes não
   determinísticos quando acessados globalmente.
 - **Onde:** `Clock` e contrato de armazenamento; demais dependências seguem
   injeção por construtor do Spring.
@@ -1163,7 +1166,7 @@ coluna `tenant_id` preventiva em todas as tabelas.
   I/O nos testes sem mockar classes internas.
 - **Limite:** não serão criadas interfaces artificiais para todas as classes.
 
-### 19.6 Optimistic Locking
+### 19.6 Bloqueio otimista
 
 - **Problema concreto:** duas abas podem alterar paciente, agendamento ou
   rascunho e a última requisição apagaria silenciosamente a primeira.
@@ -1172,7 +1175,7 @@ coluna `tenant_id` preventiva em todas as tabelas.
   e sem bloqueio duradouro, adequado ao único usuário em múltiplas sessões/abas.
 - **Limite:** não substitui a validação transacional de sobreposição.
 
-### 19.7 Pessimistic Locking no calendário único
+### 19.7 Bloqueio pessimista no calendário único
 
 - **Problema concreto:** duas requisições simultâneas podem verificar a mesma
   lacuna de horário antes que qualquer uma grave, criando sobreposição.
@@ -1180,36 +1183,36 @@ coluna `tenant_id` preventiva em todas as tabelas.
   trava curta em uma linha técnica que representa o único calendário.
 - **Por que é melhor que somente “consultar e depois inserir”:** serializa apenas
   as poucas mutações da agenda e torna a regra confiável mesmo com duas abas,
-  sem exigir constraint avançada entre tabelas diferentes.
+  sem exigir restrição avançada entre tabelas diferentes.
 - **Limite:** a trava existe porque há um único calendário. Ela deverá ser
   redesenhada se o produto ganhar múltiplos médicos.
 
-### 19.8 Application Service
+### 19.8 Serviço de aplicação
 
-- **Problema concreto:** finalização, upload e reagendamento coordenam regra,
+- **Problema concreto:** finalização, envio e reagendamento coordenam regra,
   persistência, autorização contextual e auditoria na mesma transação.
 - **Onde:** casos de uso com coordenação real.
-- **Por que é melhor que controller direto no repository:** preserva transação,
+- **Por que é melhor que controlador direto no repositório:** preserva transação,
   mantém protocolo HTTP fora do domínio e oferece um fluxo legível.
-- **Limite:** não haverá um service genérico por entidade nem métodos que apenas
-  copiem todo repository sem motivo. Query services simples são a exceção
-  consciente de pass-through.
+- **Limite:** não haverá um serviço genérico por entidade nem métodos que apenas
+  copiem todo o repositório sem motivo. Serviços de consulta simples são a exceção
+  consciente de mero repasse.
 
-### 19.9 Patterns explicitamente rejeitados no MVP
+### 19.9 Padrões explicitamente rejeitados no MVP
 
-- **State:** poucos estados fixos; enum e transições explícitas são mais simples.
-- **Factory dedicada:** criação pode ser expressa por construtor/factory method da
+- **Estado:** poucos estados fixos; enumeração e transições explícitas são mais simples.
+- **Fábrica dedicada:** criação pode ser expressa por construtor/método de fábrica da
   própria entidade.
-- **Domain events/Observer para auditoria:** auditoria é obrigatória e
+- **Eventos de domínio/Observador para auditoria:** auditoria é obrigatória e
   transacional; chamada explícita é mais clara.
 - **AOP para auditoria de negócio:** esconderia contexto e metadados importantes.
 - **CQRS:** volume e complexidade não justificam modelos separados.
-- **Mediator/Command Bus:** adicionaria indireção sem múltiplos handlers.
-- **Generic CRUD service/repository:** reduz duplicação aparente, mas apaga a
+- **Mediador/barramento de comandos:** adicionaria indireção sem múltiplos manipuladores.
+- **CRUD genérico em serviço/repositório:** reduz duplicação aparente, mas apaga a
   linguagem e as regras de cada módulo.
-- **DTO mapper framework:** mapeamentos pequenos e explícitos são mais fáceis de
+- **Arcabouço de mapeamento de DTOs:** mapeamentos pequenos e explícitos são mais fáceis de
   aprender e depurar.
-- **Microservices, Saga e mensageria:** não existe transação distribuída.
+- **Microserviços, saga e mensageria:** não existe transação distribuída.
 
 ## 20. Decisões pendentes, riscos, simplificações e evolução
 
@@ -1223,64 +1226,64 @@ coluna `tenant_id` preventiva em todas as tabelas.
    do agendamento na finalização.
 6. Confirmar janela fixa de 24 horas para lembretes.
 7. Confirmar limite de 10 MiB por anexo.
-8. Escolher `404` ou `410` para download de anexo removido.
+8. Escolher `404` ou `410` para baixamento de anexo removido.
 9. Confirmar remoção física do binário com preservação de lápide.
-10. Definir nome final do artefato, group ID e pacote raiz.
+10. Definir nome final do artefato, identificador de grupo e pacote raiz.
 11. Definir ambiente de implantação de demonstração.
-12. Configurar o tracker deste repositório antes da publicação dos tickets.
-13. Aprovar os dois seams de teste descritos na seção 16.
+12. Configurar o rastreador deste repositório antes da publicação dos tickets.
+13. Aprovar as duas fronteiras de teste descritas na seção 16.
 
 ### 20.2 Riscos técnicos
 
 - a trava do calendário pode virar gargalo se o produto deixar de ser individual;
-- falha entre escrita de arquivo e commit do banco pode produzir inconsistência
+- falha entre escrita de arquivo e confirmação da transação do banco pode produzir inconsistência
   se a compensação não for testada;
-- Markdown pode causar XSS se um frontend futuro o renderizar sem sanitização;
+- Markdown pode causar XSS se uma interface web futura o renderizar sem sanitização;
 - logs e auditoria podem vazar dados sensíveis se metadados forem amplos demais;
-- imutabilidade pode ser quebrada por update JPA acidental se o modelo e
+- imutabilidade pode ser quebrada por atualização JPA acidental se o modelo e
   permissões do banco não forem verificados;
-- migrations mal planejadas podem dificultar evolução de dados clínicos;
-- autenticação por sessão exige coordenação correta de CSRF e CORS com o frontend;
-- filesystem local exige backup consistente com o banco;
+- migrações mal planejadas podem dificultar evolução de dados clínicos;
+- autenticação por sessão exige coordenação correta de CSRF e CORS com a interface web;
+- sistema de arquivos local exige cópia de segurança consistente com o banco;
 - CPF obrigatório limita pacientes sem CPF;
 - abstrações educacionais podem crescer além do necessário;
-- pass-through pode ser medido de forma artificial e incentivar código pior;
+- mero repasse pode ser medido de forma artificial e incentivar código pior;
 - usar dados reais em portfólio representa risco grave de privacidade.
 
 ### 20.3 Mitigações proporcionais
 
 - trava transacional curta no calendário e testes concorrentes antes de
-  considerar constraint PostgreSQL avançada;
-- operação de arquivo com staging e compensação;
-- Markdown entregue como download, nunca renderizado no backend;
-- whitelist de metadados de auditoria;
-- API sem update/delete para registros imutáveis, validações de domínio e
-  migrations restritivas;
+  considerar restrição PostgreSQL avançada;
+- operação de arquivo com área temporária e compensação;
+- Markdown entregue como baixamento, nunca renderizado pela API;
+- lista de permissões de metadados de auditoria;
+- API sem atualização/exclusão para registros imutáveis, validações de domínio e
+  migrações restritivas;
 - PostgreSQL em integração via Testcontainers;
 - documentação conjunta de cookie, CSRF e origem permitida;
-- backup de banco e volume como uma única unidade operacional;
+- cópia de segurança de banco e volume como uma única unidade operacional;
 - revisão arquitetural por fatia, não contagem cega de classes.
 
 ### 20.4 Simplificações adotadas
 
-- um médico e uma role;
+- um médico e um perfil;
 - sessão em vez de JWT;
-- sem frontend;
+- sem interface web;
 - sem CRM e comunicação externa;
 - lembrete calculado sob demanda;
 - sem exclusão de paciente;
-- enum em vez de State;
+- enumeração em vez do padrão Estado;
 - chamadas explícitas de auditoria em vez de AOP/eventos;
-- armazenamento local em vez de object storage;
+- armazenamento local em vez de armazenamento de objetos;
 - sem criptografia de campo gerenciada pela aplicação;
-- sem endpoint de relatório de auditoria;
-- sem modelagem preventiva de tenant, clínica ou hospital;
+- sem rota de relatório de auditoria;
+- sem modelagem preventiva de organização, clínica ou hospital;
 - sem abstração genérica de CRUD;
-- dois seams de teste em vez de uma pirâmide de testes por camada.
+- duas fronteiras de teste em vez de uma pirâmide de testes por camada.
 
 ### 20.5 Pontos de evolução
 
-- trocar o adapter local de anexos sem alterar os casos de uso;
+- trocar o adaptador local de anexos sem alterar os casos de uso;
 - adicionar consulta/exportação da auditoria;
 - adicionar relatórios e cópia do prontuário;
 - tornar lembretes configuráveis e criar canais externos;
@@ -1288,32 +1291,32 @@ coluna `tenant_id` preventiva em todas as tabelas.
 - permitir novos perfis com autorização real;
 - revisar regras de retenção e exclusão;
 - adicionar criptografia de campo somente com gestão profissional de chaves;
-- reforçar prevenção de conflitos por constraint específica do PostgreSQL se o
+- reforçar prevenção de conflitos por restrição específica do PostgreSQL se o
   risco concorrente se materializar;
 - modularizar fisicamente apenas quando os limites e a necessidade operacional
   estiverem comprovados.
 
 ## 21. Critério de aprovação desta especificação
 
-A especificação estará aprovada quando o Product Owner confirmar:
+A especificação estará aprovada quando o responsável pelo produto confirmar:
 
 1. escopo e itens excluídos;
 2. regras e critérios de aceitação;
 3. decisões pendentes da seção 20.1;
-4. seams de teste da seção 16;
+4. fronteiras de teste da seção 16;
 5. autorização para decompor o trabalho em tickets.
 
 Após essa aprovação, a próxima etapa será apresentar a decomposição proposta de
-tickets, seus bloqueios e entregas end-to-end. Os tickets somente serão
+tickets, seus bloqueios e entregas de ponta a ponta. Os tickets somente serão
 publicados depois de uma segunda aprovação de granularidade e dependências.
 
-## 22. Further Notes — Referências oficiais
+## 22. Observações adicionais — Referências oficiais
 
-O baseline técnico foi conferido em 23 de julho de 2026:
+A base técnica foi conferida em 23 de julho de 2026:
 
 - [Spring Boot 4.1 — requisitos de sistema](https://docs.spring.io/spring-boot/system-requirements.html);
 - [OpenJDK 21](https://openjdk.org/projects/jdk/21/);
 - [Política de versões suportadas do PostgreSQL](https://www.postgresql.org/support/versioning/).
 
-As referências servem para selecionar um baseline suportado. Elas não substituem
-o congelamento de versões e a validação do build no primeiro ticket técnico.
+As referências servem para selecionar uma base suportada. Elas não substituem
+o congelamento de versões e a validação do processo de construção no primeiro ticket técnico.

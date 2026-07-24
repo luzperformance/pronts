@@ -23,8 +23,8 @@ Tornar confiável, inclusive sob concorrência, a garantia de que o calendário
 ## Fora do escopo
 
 - bloqueios de agenda, adicionados em PP-009;
-- constraint PostgreSQL avançada entre tabelas;
-- fila, lock distribuído ou granularidade por médico.
+- restrição PostgreSQL avançada entre tabelas;
+- fila, bloqueio distribuído ou granularidade por médico.
 
 ## Critérios de aceitação
 
@@ -38,9 +38,9 @@ Tornar confiável, inclusive sob concorrência, a garantia de que o calendário
 
 ## Estratégia TDD
 
-- seam de domínio para sobreposição e adjacência de `TimeInterval`;
-- seam REST com duas requisições realmente concorrentes e PostgreSQL;
-- não simular concorrência com mocks nem testar a anotação de lock isoladamente.
+- fronteira de domínio para sobreposição e adjacência de `TimeInterval`;
+- fronteira REST com duas requisições realmente concorrentes e PostgreSQL;
+- não simular concorrência com duplos nem testar a anotação de bloqueio isoladamente.
 
 ## Requisitos
 

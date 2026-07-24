@@ -1,4 +1,4 @@
-# Deploy Kubernetes local
+# Implantação Kubernetes local
 
 Este laboratório executa a API e o PostgreSQL 18 dentro de um cluster Kubernetes
 local já existente. O Traefik instalado no cluster é a única entrada acessível
@@ -20,11 +20,11 @@ kubectl get storageclass
 
 O `IngressClass` deve se chamar `traefik`, o CRD
 `middlewares.traefik.io` deve existir e alguma `StorageClass` padrão deve
-provisionar PVCs `ReadWriteOnce`. Os entrypoints do Traefik devem se chamar
+provisionar PVCs `ReadWriteOnce`. Os pontos de entrada do Traefik devem se chamar
 `web` e `websecure` e estar acessíveis pela máquina local. Se esses nomes forem
-diferentes, adapte somente os manifests de Ingress ao cluster documentado.
+diferentes, adapte somente os manifestos de Ingress ao cluster documentado.
 
-Também confirme que o checkout não contém credenciais nem artefatos de uma
+Também confirme que a cópia de trabalho não contém credenciais nem artefatos de uma
 demonstração anterior:
 
 ```bash
@@ -34,7 +34,7 @@ git grep -n 'REPLACE_WITH_LOCAL_' -- deploy/kubernetes
 
 ## 1. Construir e disponibilizar a imagem
 
-Parta de um checkout limpo e execute:
+Parta de uma cópia de trabalho limpa e execute:
 
 ```bash
 docker build --pull --tag primeiro-prontuario-api:0.0.1 .
@@ -42,9 +42,9 @@ docker inspect primeiro-prontuario-api:0.0.1 \
   --format '{{.Config.User}} {{json .Config.Entrypoint}}'
 ```
 
-O resultado deve começar com `10001:10001`. As imagens de build e runtime estão
-fixadas por digest, Maven e Maven Wrapper têm versão fixa, o Wrapper valida o
-checksum da distribuição e o JAR usa timestamp reproduzível. O estágio final
+O resultado deve começar com `10001:10001`. As imagens de construção e execução estão
+fixadas por resumo criptográfico, Maven e Maven Wrapper têm versão fixa, o Wrapper valida a
+soma de verificação da distribuição e o JAR usa carimbo de data e hora reproduzível. O estágio final
 contém somente o JRE e o JAR; não recebe código-fonte, Maven ou credenciais.
 
 Disponibilize essa imagem ao cluster pelo mecanismo já oferecido pela ferramenta
@@ -63,7 +63,7 @@ cp deploy/kubernetes/credentials.example.env \
 
 Edite `credentials.local.env` com valores exclusivos desta demonstração. O
 arquivo local é ignorado pelo Git. Crie o `Secret` sem gravar seus valores em um
-manifest:
+manifesto:
 
 ```bash
 kubectl apply -f deploy/kubernetes/00-namespace.yaml
@@ -157,31 +157,31 @@ O PostgreSQL é exatamente a série 18 e recebe um PVC próprio pelo
 `primeiro-prontuario-attachments`. Eles são privados, distintos e
 `ReadWriteOnce`; nunca monte um no caminho do outro.
 
-As probes de startup, readiness e liveness da API usam somente
-`/actuator/health`. O endpoint responde sem componentes ou detalhes. A
-readiness só fica saudável quando a aplicação iniciou e o indicador do
-datasource alcança o PostgreSQL.
+As sondas de inicialização, prontidão e vitalidade da API usam somente
+`/actuator/health`. A rota responde sem componentes ou detalhes. A
+sonda de prontidão só fica saudável quando a aplicação iniciou e o indicador da
+fonte de dados confirma a conexão com o PostgreSQL.
 
-Forwarded headers ficam desabilitados por padrão. Este Deployment ativa o perfil
-`prod`, que usa a integração nativa do Tomcat e aceita os headers somente quando
+Os cabeçalhos encaminhados ficam desabilitados por padrão. Este `Deployment` ativa o perfil
+`prod`, que usa a integração nativa do Tomcat e aceita os cabeçalhos somente quando
 o endereço do proxy corresponde à expressão privada
 `TRUSTED_PROXY_NETWORKS`. Ajuste essa expressão se o pod do Traefik usar outra
 rede privada. O `Service` da API não tem exposição pública; uma conexão direta
-fora da rede confiável não consegue transformar um header forjado em origem
+fora da rede confiável não consegue transformar um cabeçalho forjado em origem
 HTTPS. O Traefik informa o esquema HTTPS e a aplicação emite os cookies de
 sessão e CSRF com `Secure`.
 
-Em banco vazio, o startup aplica V1–V16 e o Hibernate valida o resultado. Se o
-checksum ou histórico Flyway for incompatível, o pod não fica pronto; não use
+Em banco vazio, a inicialização aplica V1–V16 e o Hibernate valida o resultado. Se a
+soma de verificação ou o histórico Flyway for incompatível, o pod não fica pronto; não use
 `repair`, `baseline` ou `ddl-auto` para mascarar a divergência.
 
-## 5. Executar o smoke test com persistência
+## 5. Executar o teste de fumaça com persistência
 
-O smoke usa o seam REST existente. Ele verifica redirecionamento para HTTPS,
-certificado, saúde, login, atributos do cookie, CSRF, paciente, agenda,
-consulta, finalização, adendo, prontuário, anexo, download e auditoria. Em
+O teste de fumaça usa a fronteira REST existente. Ele verifica redirecionamento para HTTPS,
+certificado, saúde, autenticação, atributos do cookie, CSRF, paciente, agenda,
+consulta, finalização, adendo, prontuário, anexo, baixamento e auditoria. Em
 seguida recria separadamente o pod da API e o pod do PostgreSQL e repete consulta
-e download:
+e baixamento:
 
 ```bash
 chmod +x scripts/smoke-kubernetes.sh
@@ -197,10 +197,10 @@ kubectl get pods --namespace primeiro-prontuario \
   --output custom-columns=NAME:.metadata.name,USER:.spec.containers[*].securityContext.runAsUser
 ```
 
-Os PVCs preservam dados durante a recriação de pods, mas **PVC não é backup**.
+Os PVCs preservam dados durante a recriação de pods, mas **PVC não é cópia de segurança**.
 O procedimento manual e o ensaio descartável de cópia conjunta do PostgreSQL e
 dos anexos estão em [`backup-restore.md`](backup-restore.md). Automatizar
-backup, criptografia de infraestrutura e recuperação fica fora deste
+cópias de segurança, criptografia de infraestrutura e recuperação fica fora deste
 laboratório.
 
 ## 6. Remover a demonstração
@@ -214,5 +214,5 @@ kubectl delete namespace primeiro-prontuario
 
 Remova também a entrada de `prontuario.local`, a confiança na CA conforme a
 seção 3, os arquivos em `deploy/tls/`, as credenciais locais e quaisquer
-snapshots em `backups/`. A chave privada da CA nunca deve sair da máquina de
+capturas em `backups/`. A chave privada da CA nunca deve sair da máquina de
 demonstração.
