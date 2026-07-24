@@ -24,6 +24,7 @@ export type DatabasePrivilegeContract = {
   runtimeCreateSqlState: string;
   runtimeDropSqlState: string;
   runtimeHasCurrentTableDml: boolean;
+  runtimeTemporaryCreateSqlState: string;
 };
 
 type CapabilityRow = {
@@ -40,6 +41,7 @@ type MigrationRoleRow = {
 
 const futureTable = "privilege_probe_future";
 const forbiddenTable = "forbidden_runtime_ddl";
+const forbiddenTemporaryTable = "forbidden_runtime_temporary_ddl";
 
 export async function probeDatabasePrivileges({
   migrationClient,
@@ -146,6 +148,13 @@ export async function probeDatabasePrivileges({
       runtimeClient,
       `DROP TABLE ${futureTable}`,
     );
+    const runtimeTemporaryCreateSqlState = await deniedSqlState(
+      runtimeClient,
+      `CREATE TEMPORARY TABLE ${forbiddenTemporaryTable} (id INTEGER)`,
+    );
+    if (runtimeTemporaryCreateSqlState === "ALLOWED") {
+      await runtimeClient.query(`DROP TABLE ${forbiddenTemporaryTable}`);
+    }
     const runtimeAssumeMigrationRoleSqlState = await deniedSqlState(
       runtimeClient,
       `SET ROLE ${quoteIdentifier(migrationRole)}`,
@@ -180,6 +189,7 @@ export async function probeDatabasePrivileges({
       runtimeCreateSqlState,
       runtimeDropSqlState,
       runtimeHasCurrentTableDml: capability.has_current_table_dml,
+      runtimeTemporaryCreateSqlState,
     };
   } finally {
     await migrationClient.query(`DROP TABLE IF EXISTS ${forbiddenTable}`);

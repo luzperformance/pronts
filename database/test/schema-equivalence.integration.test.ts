@@ -174,6 +174,7 @@ test("migration and runtime credentials enforce the approved privilege boundary"
           runtimeCreateSqlState: "42501",
           runtimeAlterSqlState: "42501",
           runtimeDropSqlState: "42501",
+          runtimeTemporaryCreateSqlState: "42501",
           runtimeAssumeMigrationRoleSqlState: "42501",
         },
       );
@@ -208,9 +209,17 @@ async function createExternalRoles(connectionString: string): Promise<void> {
       NOREPLICATION
       NOBYPASSRLS;
 
+      REVOKE CONNECT, TEMPORARY
+      ON DATABASE ${databaseName}
+      FROM PUBLIC;
+
       GRANT CONNECT, CREATE
       ON DATABASE ${databaseName}
       TO ${migrationRole};
+
+      GRANT CONNECT
+      ON DATABASE ${databaseName}
+      TO ${runtimeRole};
 
       GRANT USAGE, CREATE
       ON SCHEMA public

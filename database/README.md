@@ -68,5 +68,5 @@ defaults, constraints, índices, sequences, funções, triggers e políticas.
 A mesma prova cria as roles de bootstrap, migration e runtime apenas no arranjo
 descartável. Ela confirma que migration não é superusuária nem cria roles, mas
 consegue criar e alterar objetos. A runtime conecta, usa o schema, executa DML
-e usa sequences atuais ou futuras, mas recebe `42501` ao tentar DDL ou assumir
-a role de migration.
+e usa sequences atuais ou futuras, mas recebe `42501` ao tentar DDL persistente
+ou temporário ou assumir a role de migration.
