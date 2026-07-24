@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: primeiro-prontuario-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/primeiro_prontuario}
+    username: ${DB_USERNAME:primeiro_prontuario}
+    password: ${DB_PASSWORD:}
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 11MB
+      max-request-size: 12MB
+
+app:
+  time-zone: ${APP_TIME_ZONE:America/Sao_Paulo}
+  attachments:
+    directory: ${ATTACHMENT_STORAGE_DIRECTORY:./data/attachments}
+  cors:
+    allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:}
+  doctor:
+    username: ${DOCTOR_USERNAME}
+    password: ${DOCTOR_PASSWORD}
+
+server:
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:NONE}
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+    jmx:
+      exposure:
+        exclude: "*"
+  endpoint:
+    health:
+      probes:
+        enabled: false
+      show-components: never
+      show-details: never

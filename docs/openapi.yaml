@@ -1,0 +1,1758 @@
+openapi: 3.1.0
+info:
+  title: Primeiro Prontuário API
+  version: 1.0.0
+  description: |
+    Contrato completo do MVP acadêmico para um único médico.
+    Use somente dados fictícios ou anonimizados.
+  license:
+    name: Não licenciado - uso acadêmico demonstrativo
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://prontuario.local
+    description: Cluster Kubernetes local com TLS confiado apenas na máquina de demonstração
+tags:
+  - name: Autenticação
+    description: Login, identidade, token CSRF e logout da sessão server-side
+  - name: Pacientes
+    description: Cadastro, busca, atualização e status do paciente
+  - name: Agenda
+    description: Agendamentos, transições, consulta de agenda e lembretes
+  - name: Bloqueios
+    description: Bloqueios futuros do calendário único
+  - name: Consultas
+    description: Rascunho, finalização imutável e adendos
+  - name: Prontuário
+    description: Leitura cronológica de consultas finalizadas
+  - name: Anexos
+    description: Metadados, upload, download e remoção com lápide
+  - name: Auditoria
+    description: Trilha interna sem conteúdo clínico
+security:
+  - sessionCookie: []
+paths:
+  /api/v1/auth/login:
+    post:
+      tags: [Autenticação]
+      operationId: login
+      summary: Iniciar sessão do médico único
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              fictitious:
+                value:
+                  username: doctor
+                  password: local-demo-doctor-password
+      responses:
+        "200":
+          description: Sessão criada; define o cookie JSESSIONID
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: JSESSIONID com HttpOnly, SameSite=Lax e Secure em HTTPS
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorIdentity"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/me:
+    get:
+      tags: [Autenticação]
+      operationId: getCurrentDoctor
+      summary: Consultar a identidade da sessão
+      responses:
+        "200":
+          description: Médico autenticado
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorIdentity"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/csrf:
+    get:
+      tags: [Autenticação]
+      operationId: getCsrfToken
+      summary: Obter token CSRF
+      description: |
+        Define/atualiza XSRF-TOKEN e devolve o nome do header e o token.
+        O mesmo cookie jar deve ser usado na mutação seguinte.
+      security: []
+      responses:
+        "200":
+          description: Token CSRF
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: XSRF-TOKEN com SameSite=Lax e Secure em HTTPS
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfTokenResponse"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/logout:
+    post:
+      tags: [Autenticação]
+      operationId: logout
+      summary: Encerrar a sessão
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        "204":
+          description: Sessão encerrada
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/patients:
+    get:
+      tags: [Pacientes]
+      operationId: searchPatients
+      summary: Pesquisar pacientes
+      parameters:
+        - name: fullName
+          in: query
+          schema:
+            type: string
+        - name: motherName
+          in: query
+          schema:
+            type: string
+        - name: cpf
+          in: query
+          schema:
+            type: string
+        - name: phone
+          in: query
+          schema:
+            type: string
+        - name: email
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PatientStatus"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: sort
+          in: query
+          description: campo,direção; campos permitidos estão no enum
+          schema:
+            type: string
+            default: fullName,asc
+            enum:
+              - id,asc
+              - id,desc
+              - fullName,asc
+              - fullName,desc
+              - motherName,asc
+              - motherName,desc
+              - birthDate,asc
+              - birthDate,desc
+              - cpf,asc
+              - cpf,desc
+              - phone,asc
+              - phone,desc
+              - email,asc
+              - email,desc
+              - status,asc
+              - status,desc
+      responses:
+        "200":
+          description: Página de pacientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [Pacientes]
+      operationId: createPatient
+      summary: Cadastrar paciente
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePatientRequest"
+      responses:
+        "201":
+          description: Paciente criado
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/patients/{patientId}:
+    parameters:
+      - $ref: "#/components/parameters/PatientId"
+    get:
+      tags: [Pacientes]
+      operationId: getPatient
+      summary: Consultar paciente
+      responses:
+        "200":
+          description: Paciente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      tags: [Pacientes]
+      operationId: updatePatient
+      summary: Substituir os dados mutáveis do paciente
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePatientRequest"
+      responses:
+        "200":
+          description: Paciente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/patients/{patientId}/status:
+    parameters:
+      - $ref: "#/components/parameters/PatientId"
+    patch:
+      tags: [Pacientes]
+      operationId: changePatientStatus
+      summary: Ativar ou inativar paciente
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePatientStatusRequest"
+      responses:
+        "200":
+          description: Paciente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/appointments:
+    get:
+      tags: [Agenda]
+      operationId: searchAppointments
+      summary: Consultar agenda
+      parameters:
+        - $ref: "#/components/parameters/RequiredFrom"
+        - $ref: "#/components/parameters/RequiredTo"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/AppointmentStatus"
+        - name: patientId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Página de agendamentos em ordem de início e id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [Agenda]
+      operationId: createAppointment
+      summary: Agendar paciente
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppointmentRequest"
+      responses:
+        "201":
+          description: Agendamento criado
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/appointments/reminders:
+    get:
+      tags: [Agenda]
+      operationId: listAppointmentReminders
+      summary: Listar lembretes internos
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Agendamentos na janela de lembrete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/appointments/{appointmentId}:
+    parameters:
+      - $ref: "#/components/parameters/AppointmentId"
+    get:
+      tags: [Agenda]
+      operationId: getAppointment
+      summary: Consultar agendamento
+      responses:
+        "200":
+          description: Agendamento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/appointments/{appointmentId}/schedule:
+    parameters:
+      - $ref: "#/components/parameters/AppointmentId"
+    put:
+      tags: [Agenda]
+      operationId: rescheduleAppointment
+      summary: Reagendar compromisso
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescheduleAppointmentRequest"
+      responses:
+        "200":
+          description: Agendamento reagendado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/appointments/{appointmentId}/status:
+    parameters:
+      - $ref: "#/components/parameters/AppointmentId"
+    patch:
+      tags: [Agenda]
+      operationId: changeAppointmentStatus
+      summary: Transicionar estado do agendamento
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeAppointmentStatusRequest"
+      responses:
+        "200":
+          description: Agendamento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/schedule-blocks:
+    get:
+      tags: [Bloqueios]
+      operationId: searchScheduleBlocks
+      summary: Listar bloqueios futuros no período
+      parameters:
+        - $ref: "#/components/parameters/RequiredFrom"
+        - $ref: "#/components/parameters/RequiredTo"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Página solicitada como array ordenado, sem envelope
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScheduleBlock"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [Bloqueios]
+      operationId: createScheduleBlock
+      summary: Criar bloqueio futuro
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduleBlockRequest"
+      responses:
+        "201":
+          description: Bloqueio criado
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleBlock"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/schedule-blocks/{blockId}:
+    parameters:
+      - $ref: "#/components/parameters/BlockId"
+    delete:
+      tags: [Bloqueios]
+      operationId: removeScheduleBlock
+      summary: Remover bloqueio futuro
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        "204":
+          description: Bloqueio removido
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/patients/{patientId}/consultations:
+    parameters:
+      - $ref: "#/components/parameters/PatientId"
+    post:
+      tags: [Consultas]
+      operationId: createConsultationDraft
+      summary: Criar rascunho de consulta
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsultationDraftRequest"
+      responses:
+        "201":
+          description: Rascunho criado
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consultation"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/consultations/{consultationId}:
+    parameters:
+      - $ref: "#/components/parameters/ConsultationId"
+    get:
+      tags: [Consultas]
+      operationId: getConsultation
+      summary: Consultar rascunho ou consulta finalizada
+      responses:
+        "200":
+          description: Consulta, incluindo adendos quando existentes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consultation"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      tags: [Consultas]
+      operationId: updateConsultationDraft
+      summary: Atualizar rascunho clínico
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConsultationRequest"
+      responses:
+        "200":
+          description: Rascunho atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consultation"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/consultations/{consultationId}/finalization:
+    parameters:
+      - $ref: "#/components/parameters/ConsultationId"
+    post:
+      tags: [Consultas]
+      operationId: finalizeConsultation
+      summary: Finalizar consulta de forma imutável
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        "200":
+          description: Consulta finalizada; repetição idempotente indica alreadyFinalized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consultation"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/consultations/{consultationId}/addenda:
+    parameters:
+      - $ref: "#/components/parameters/ConsultationId"
+    post:
+      tags: [Consultas]
+      operationId: addConsultationAddendum
+      summary: Adicionar adendo append-only
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddendumRequest"
+      responses:
+        "201":
+          description: Adendo criado
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Addendum"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/patients/{patientId}/medical-record:
+    parameters:
+      - $ref: "#/components/parameters/PatientId"
+    get:
+      tags: [Prontuário]
+      operationId: getMedicalRecord
+      summary: Ler prontuário finalizado em ordem cronológica
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            examples: ["2030-01-15T10:00:00"]
+          description: Data local inclusiva, sem offset
+        - name: to
+          in: query
+          schema:
+            type: string
+            examples: ["2030-01-15T11:00:00"]
+          description: Data local exclusiva, sem offset
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Página cronológica de consultas finalizadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicalRecordPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/patients/{patientId}/attachments:
+    parameters:
+      - $ref: "#/components/parameters/PatientId"
+    get:
+      tags: [Anexos]
+      operationId: listPatientAttachments
+      summary: Listar metadados dos anexos do paciente
+      responses:
+        "200":
+          description: Anexos ativos e lápides de removidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attachment"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [Anexos]
+      operationId: uploadAttachment
+      summary: Enviar anexo PDF, JPG, PNG ou Markdown de até 10 MiB
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      parameters:
+        - name: consultationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Anexo persistido
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attachment"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "415":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/attachments/{attachmentId}:
+    parameters:
+      - $ref: "#/components/parameters/AttachmentId"
+    get:
+      tags: [Anexos]
+      operationId: getAttachmentMetadata
+      summary: Consultar metadados ou lápide do anexo
+      responses:
+        "200":
+          description: Metadados do anexo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attachment"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [Anexos]
+      operationId: removeAttachment
+      summary: Remover binário e manter lápide
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveAttachmentRequest"
+      responses:
+        "204":
+          description: Anexo removido ou remoção idempotente concluída
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/attachments/{attachmentId}/content:
+    parameters:
+      - $ref: "#/components/parameters/AttachmentId"
+    get:
+      tags: [Anexos]
+      operationId: downloadAttachment
+      summary: Baixar binário autenticado
+      responses:
+        "200":
+          description: Conteúdo com Content-Disposition attachment
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            Content-Length:
+              schema:
+                type: integer
+                format: int64
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            text/markdown:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "410":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/audit-events:
+    get:
+      tags: [Auditoria]
+      operationId: listAuditEvents
+      summary: Consultar trilha de auditoria interna
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: from
+          in: query
+          description: Início inclusivo do período
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Fim exclusivo do período
+          schema:
+            type: string
+            format: date-time
+        - name: action
+          in: query
+          schema:
+            $ref: "#/components/schemas/AuditAction"
+        - name: outcome
+          in: query
+          schema:
+            $ref: "#/components/schemas/AuditOutcome"
+        - name: targetType
+          in: query
+          schema:
+            $ref: "#/components/schemas/AuditTargetType"
+        - name: targetId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Página em ordem decrescente de ocorrência e id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Sessão server-side; HttpOnly, SameSite=Lax e Secure em HTTPS
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
+      description: |
+        Token devolvido por GET /api/v1/auth/csrf e associado ao cookie
+        XSRF-TOKEN do mesmo cliente. Exigido em mutações autenticadas.
+  headers:
+    CorrelationId:
+      description: UUID de correlação aceito ou gerado pela API
+      schema:
+        type: string
+        format: uuid
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    RequiredFrom:
+      name: from
+      in: query
+      required: true
+      description: Início inclusivo local, sem offset, interpretado por APP_TIME_ZONE
+      schema:
+        type: string
+        examples: ["2030-01-15T10:00:00"]
+    RequiredTo:
+      name: to
+      in: query
+      required: true
+      description: Fim exclusivo local, sem offset, interpretado por APP_TIME_ZONE
+      schema:
+        type: string
+        examples: ["2030-01-15T11:00:00"]
+    PatientId:
+      name: patientId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AppointmentId:
+      name: appointmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    BlockId:
+      name: blockId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ConsultationId:
+      name: consultationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AttachmentId:
+      name: attachmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Problem:
+      description: Problem Details seguro; status e tipo dependem da falha
+      headers:
+        X-Correlation-ID:
+          $ref: "#/components/headers/CorrelationId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          format: password
+          minLength: 1
+          writeOnly: true
+    DoctorIdentity:
+      type: object
+      required: [id, username]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+    CsrfTokenResponse:
+      type: object
+      required: [headerName, parameterName, token]
+      properties:
+        headerName:
+          type: string
+          const: X-XSRF-TOKEN
+        parameterName:
+          type: string
+          const: _csrf
+        token:
+          type: string
+          writeOnly: true
+    PatientStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    CreatePatientRequest:
+      type: object
+      required: [fullName, motherName, birthDate, cpf, phone]
+      additionalProperties: false
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        motherName:
+          type: string
+          minLength: 1
+        birthDate:
+          type: string
+          format: date
+        cpf:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        email:
+          type: [string, "null"]
+        address:
+          type: [string, "null"]
+        emergencyContact:
+          type: [string, "null"]
+        insurance:
+          type: [string, "null"]
+        allergies:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+    UpdatePatientRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreatePatientRequest"
+        - type: object
+          required: [version]
+          properties:
+            version:
+              type: integer
+              format: int64
+              minimum: 0
+    ChangePatientStatusRequest:
+      type: object
+      required: [status, version]
+      additionalProperties: false
+      properties:
+        status:
+          $ref: "#/components/schemas/PatientStatus"
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    Patient:
+      type: object
+      required:
+        - id
+        - fullName
+        - motherName
+        - birthDate
+        - cpf
+        - phone
+        - status
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        motherName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        cpf:
+          type: string
+        phone:
+          type: string
+        email:
+          type: [string, "null"]
+        address:
+          type: [string, "null"]
+        emergencyContact:
+          type: [string, "null"]
+        insurance:
+          type: [string, "null"]
+        allergies:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/PatientStatus"
+        version:
+          type: integer
+          format: int64
+    PatientSummary:
+      type: object
+      required: [id, fullName, motherName, birthDate, cpf, phone, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        motherName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        cpf:
+          type: string
+        phone:
+          type: string
+        email:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/PatientStatus"
+    PatientPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/PatientSummary"
+    AppointmentStatus:
+      type: string
+      enum: [SCHEDULED, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW]
+    CreateAppointmentRequest:
+      type: object
+      required: [patientId, startsAt, durationMinutes]
+      additionalProperties: false
+      properties:
+        patientId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          description: Data local sem offset
+          examples: ["2030-01-15T10:00:00"]
+        durationMinutes:
+          type: integer
+          enum: [15, 30, 45, 60]
+    RescheduleAppointmentRequest:
+      type: object
+      required: [startsAt, durationMinutes, version]
+      additionalProperties: false
+      properties:
+        startsAt:
+          type: string
+          description: Data local sem offset
+          examples: ["2030-01-15T10:00:00"]
+        durationMinutes:
+          type: integer
+          enum: [15, 30, 45, 60]
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    ChangeAppointmentStatusRequest:
+      type: object
+      required: [status, version]
+      additionalProperties: false
+      properties:
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    Appointment:
+      type: object
+      required: [id, patientId, startsAt, endsAt, durationMinutes, status, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+          description: Data com offset
+        endsAt:
+          type: string
+          format: date-time
+          description: Data com offset
+        durationMinutes:
+          type: integer
+          enum: [15, 30, 45, 60]
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
+        version:
+          type: integer
+          format: int64
+    AppointmentPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/Appointment"
+    CreateScheduleBlockRequest:
+      type: object
+      required: [startsAt, endsAt, reason]
+      additionalProperties: false
+      properties:
+        startsAt:
+          type: string
+          description: Data local sem offset
+          examples: ["2030-01-15T10:00:00"]
+        endsAt:
+          type: string
+          description: Data local sem offset
+          examples: ["2030-01-15T11:00:00"]
+        reason:
+          type: string
+          minLength: 1
+    ScheduleBlock:
+      type: object
+      required: [id, startsAt, endsAt, reason, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ConsultationStatus:
+      type: string
+      enum: [DRAFT, FINALIZED]
+    ConsultationDraftRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        appointmentId:
+          type: [string, "null"]
+          format: uuid
+        anamnesis:
+          type: [string, "null"]
+        chiefComplaint:
+          type: [string, "null"]
+        physicalExamination:
+          type: [string, "null"]
+        diagnosticHypotheses:
+          type: [string, "null"]
+        treatmentPlan:
+          type: [string, "null"]
+        observations:
+          type: [string, "null"]
+        clinicalDate:
+          type: [string, "null"]
+          description: Data local sem offset
+          examples: ["2030-01-15T10:00:00"]
+    UpdateConsultationRequest:
+      type: object
+      required: [version]
+      additionalProperties: false
+      properties:
+        anamnesis:
+          type: [string, "null"]
+        chiefComplaint:
+          type: [string, "null"]
+        physicalExamination:
+          type: [string, "null"]
+        diagnosticHypotheses:
+          type: [string, "null"]
+        treatmentPlan:
+          type: [string, "null"]
+        observations:
+          type: [string, "null"]
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    AddendumRequest:
+      type: object
+      required: [content, justification]
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          minLength: 1
+        justification:
+          type: string
+          minLength: 1
+    Addendum:
+      type: object
+      required: [id, consultationId, content, justification, authorId, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        consultationId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        justification:
+          type: string
+        authorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    Consultation:
+      type: object
+      required:
+        - id
+        - patientId
+        - status
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        appointmentId:
+          type: [string, "null"]
+          format: uuid
+        anamnesis:
+          type: [string, "null"]
+        chiefComplaint:
+          type: [string, "null"]
+        physicalExamination:
+          type: [string, "null"]
+        diagnosticHypotheses:
+          type: [string, "null"]
+        treatmentPlan:
+          type: [string, "null"]
+        observations:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/ConsultationStatus"
+        finalizedBy:
+          type: [string, "null"]
+          format: uuid
+        finalizedAt:
+          type: [string, "null"]
+          format: date-time
+        version:
+          type: integer
+          format: int64
+        alreadyFinalized:
+          type: [boolean, "null"]
+        addenda:
+          type: [array, "null"]
+          items:
+            $ref: "#/components/schemas/Addendum"
+    MedicalRecordAddendum:
+      type: object
+      required: [id, content, justification, authorId, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        justification:
+          type: string
+        authorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    MedicalRecordItem:
+      type: object
+      required:
+        - id
+        - clinicalDate
+        - createdAt
+        - finalizedBy
+        - finalizedAt
+        - addenda
+      properties:
+        id:
+          type: string
+          format: uuid
+        clinicalDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        anamnesis:
+          type: [string, "null"]
+        chiefComplaint:
+          type: [string, "null"]
+        physicalExamination:
+          type: [string, "null"]
+        diagnosticHypotheses:
+          type: [string, "null"]
+        treatmentPlan:
+          type: [string, "null"]
+        observations:
+          type: [string, "null"]
+        finalizedBy:
+          type: string
+          format: uuid
+        finalizedAt:
+          type: string
+          format: date-time
+        addenda:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicalRecordAddendum"
+    MedicalRecordPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/MedicalRecordItem"
+    AttachmentStatus:
+      type: string
+      enum: [ACTIVE, REMOVED]
+    Attachment:
+      type: object
+      required: [id, patientId, mediaType, size, sha256, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        consultationId:
+          type: [string, "null"]
+          format: uuid
+        originalFilename:
+          type: [string, "null"]
+          description: Omitido na lápide removida
+        mediaType:
+          type: string
+          enum: [application/pdf, image/jpeg, image/png, text/markdown]
+        size:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        status:
+          $ref: "#/components/schemas/AttachmentStatus"
+        uploadedBy:
+          type: [string, "null"]
+          format: uuid
+        createdAt:
+          type: [string, "null"]
+          format: date-time
+        removedBy:
+          type: [string, "null"]
+          format: uuid
+        removalJustification:
+          type: [string, "null"]
+        removedAt:
+          type: [string, "null"]
+          format: date-time
+    RemoveAttachmentRequest:
+      type: object
+      required: [justification]
+      additionalProperties: false
+      properties:
+        justification:
+          type: string
+          minLength: 1
+    AuditAction:
+      type: string
+      enum:
+        - AUTH_LOGIN_SUCCEEDED
+        - AUTH_LOGIN_FAILED
+        - AUTH_LOGOUT
+        - PATIENT_CREATED
+        - PATIENT_UPDATED
+        - PATIENT_STATUS_CHANGED
+        - APPOINTMENT_CREATED
+        - APPOINTMENT_RESCHEDULED
+        - APPOINTMENT_STATUS_CHANGED
+        - SCHEDULE_BLOCK_CREATED
+        - SCHEDULE_BLOCK_REMOVED
+        - CONSULTATION_FINALIZED
+        - ADDENDUM_ADDED
+        - MEDICAL_RECORD_VIEWED
+        - ATTACHMENT_UPLOADED
+        - ATTACHMENT_DOWNLOADED
+        - ATTACHMENT_REMOVED
+    AuditOutcome:
+      type: string
+      enum: [SUCCESS, FAILURE]
+    AuditTargetType:
+      type: string
+      enum:
+        - AUTHENTICATION
+        - DOCTOR_ACCOUNT
+        - PATIENT
+        - APPOINTMENT
+        - SCHEDULE_BLOCK
+        - CONSULTATION
+        - ADDENDUM
+        - ATTACHMENT
+    AuditEvent:
+      type: object
+      required:
+        - id
+        - action
+        - targetType
+        - outcome
+        - occurredAt
+        - correlationId
+        - changedFields
+      properties:
+        id:
+          type: string
+          format: uuid
+        actorId:
+          type: [string, "null"]
+          format: uuid
+        action:
+          $ref: "#/components/schemas/AuditAction"
+        targetType:
+          $ref: "#/components/schemas/AuditTargetType"
+        targetId:
+          type: [string, "null"]
+          format: uuid
+        outcome:
+          $ref: "#/components/schemas/AuditOutcome"
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        changedFields:
+          type: array
+          items:
+            type: string
+    AuditEventPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/AuditEvent"
+    PageMetadata:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    Problem:
+      type: object
+      required: [type, title, status, detail, correlationId]
+      properties:
+        type:
+          type: string
+          format: uri
+          examples: [urn:problem:invalid-request]
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        correlationId:
+          type: string
+          format: uuid
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"

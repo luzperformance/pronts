@@ -1,0 +1,7 @@
+target/
+.idea/
+*.iml
+.DS_Store
+deploy/kubernetes/credentials.local.env
+deploy/tls/
+backups/
