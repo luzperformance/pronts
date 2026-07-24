@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-init
+  namespace: primeiro-prontuario
+data:
+  10-create-application-roles.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    psql \
+      --set=ON_ERROR_STOP=1 \
+      --set=migration_password="$MIGRATION_PASSWORD" \
+      --set=runtime_password="$RUNTIME_PASSWORD" \
+      --username "$POSTGRES_USER" \
+      --dbname "$POSTGRES_DB" <<'SQL'
+    SELECT format(
+      'CREATE ROLE primeiro_prontuario_migration LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+      :'migration_password'
+    ) \gexec
+    SELECT format(
+      'CREATE ROLE primeiro_prontuario_runtime LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+      :'runtime_password'
+    ) \gexec
+
+    REVOKE CONNECT, TEMPORARY
+    ON DATABASE primeiro_prontuario
+    FROM PUBLIC;
+
+    GRANT CONNECT, CREATE
+    ON DATABASE primeiro_prontuario
+    TO primeiro_prontuario_migration;
+
+    GRANT CONNECT
+    ON DATABASE primeiro_prontuario
+    TO primeiro_prontuario_runtime;
+
+    GRANT USAGE, CREATE
+    ON SCHEMA public
+    TO primeiro_prontuario_migration;
+    SQL

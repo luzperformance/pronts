@@ -6,3 +6,5 @@ node_modules/
 deploy/kubernetes/credentials.local.env
 deploy/tls/
 backups/
+.local-runtime/
+.local-tools/

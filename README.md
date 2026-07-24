@@ -114,6 +114,8 @@ ou capturas de tela.
 - sessão, cookie, CSRF, CORS e exemplos: [`docs/http-api.md`](docs/http-api.md);
 - Docker, Kubernetes local, Traefik e TLS:
   [`docs/deploy-kubernetes-local.md`](docs/deploy-kubernetes-local.md);
+- laboratório integralmente local, incluindo cluster e PostgreSQL:
+  [`docs/deploy-kubernetes-tudo-local.md`](docs/deploy-kubernetes-tudo-local.md);
 - cópia de segurança e restauração conjunta:
   [`docs/backup-restore.md`](docs/backup-restore.md);
 - decisões e padrões: [`docs/architecture.md`](docs/architecture.md);

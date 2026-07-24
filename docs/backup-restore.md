@@ -33,6 +33,9 @@ de desastre continuam fora do escopo.
 kubectl scale deployment/primeiro-prontuario-api \
   --namespace primeiro-prontuario \
   --replicas=0
+kubectl rollout status deployment/primeiro-prontuario-api \
+  --namespace primeiro-prontuario \
+  --timeout=180s
 
 pp_backup_dir="backups/$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$pp_backup_dir"
@@ -76,8 +79,10 @@ kubectl wait pod/attachment-maintenance \
 kubectl exec -i attachment-maintenance --namespace primeiro-prontuario -- \
   tar -C /var/lib/primeiro-prontuario/attachments -czf - application \
   >"$pp_backup_dir/attachments.tar.gz"
-sha256sum "$pp_backup_dir/attachments.tar.gz" \
-  >"$pp_backup_dir/attachments.sha256"
+(
+  cd "$pp_backup_dir"
+  sha256sum attachments.tar.gz >attachments.sha256
+)
 kubectl delete pod attachment-maintenance \
   --namespace primeiro-prontuario \
   --wait=true

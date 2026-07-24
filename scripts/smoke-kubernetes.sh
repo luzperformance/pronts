@@ -283,4 +283,21 @@ wait_for_https
 authenticate
 verify_persisted_data
 
+if kubectl get statefulset/postgresql \
+  --namespace "$PP_NAMESPACE" >/dev/null 2>&1; then
+  pp_postgresql_pod="$(
+    kubectl get pods \
+      --namespace "$PP_NAMESPACE" \
+      --selector app.kubernetes.io/name=postgresql \
+      --output jsonpath='{.items[0].metadata.name}'
+  )"
+  kubectl delete pod "$pp_postgresql_pod" --namespace "$PP_NAMESPACE" --wait=true
+  kubectl rollout status statefulset/postgresql \
+    --namespace "$PP_NAMESPACE" \
+    --timeout=180s
+  wait_for_https
+  authenticate
+  verify_persisted_data
+fi
+
 echo "Smoke PP-022 concluído: HTTPS, sessão, paciente, agenda, consulta, adendo, anexo e auditoria persistiram."

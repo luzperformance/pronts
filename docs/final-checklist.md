@@ -30,14 +30,14 @@ restauração são operações distintas.
 
 ## 3. Cluster
 
-- [x] não há `Service`, `StatefulSet`, pod, PVC ou credencial de PostgreSQL
-      in-cluster;
+- [x] não há `Service`, `StatefulSet`, pod, PVC ou credencial destinada a
+      PostgreSQL in-cluster;
 - [x] o Secret separa URL/usuário/senha runtime das credenciais do médico;
 - [x] credenciais proprietária e de migração não aparecem nos manifests;
 - [x] a API usa uma réplica, estratégia `Recreate` e `Service` `ClusterIP`;
 - [x] o PVC `primeiro-prontuario-attachments` permanece privado e independente
       do Neon;
-- [x] startup e liveness não dependem do banco;
+- [x] liveness exclui o banco e startup concede tempo para a conexão inicial;
 - [x] readiness inclui o indicador JDBC;
 - [ ] o schema Neon foi migrado pelo gate antes do deploy;
 - [ ] a API ficou pronta usando endpoint JDBC direto com TLS obrigatório.

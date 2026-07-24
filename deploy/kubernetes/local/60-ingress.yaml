@@ -1,0 +1,47 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: primeiro-prontuario-http
+  namespace: primeiro-prontuario
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: primeiro-prontuario-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: prontuario.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: primeiro-prontuario-api
+                port:
+                  name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: primeiro-prontuario-https
+  namespace: primeiro-prontuario
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - prontuario.localhost
+      secretName: primeiro-prontuario-local-tls
+  rules:
+    - host: prontuario.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: primeiro-prontuario-api
+                port:
+                  name: http
