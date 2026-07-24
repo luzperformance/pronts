@@ -13,7 +13,6 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @ActiveProfiles("prod")
@@ -25,11 +24,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.doctor.password=valid-test-password",
             "server.tomcat.remoteip.internal-proxies=10.0.0.0/8"
         })
-class UntrustedForwardedHeadersApiIntegrationTest {
+class UntrustedForwardedHeadersApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;

@@ -28,11 +28,11 @@ mudariam a semântica do banco.
 
 **Situação:** adotada.
 
-O runtime Spring continua executando as 16 migrações Flyway e o Hibernate usa
-`ddl-auto=validate`. Em paralelo, o pacote independente `database/` declara o
-mesmo schema com Drizzle e mantém um baseline consolidado para PostgreSQL vazio.
-Os históricos não são misturados: um banco é preparado por Flyway ou pelo
-baseline Drizzle.
+O runtime Spring já implantado continua executando as 16 migrações Flyway nesta
+etapa e o Hibernate usa `ddl-auto=validate`. A suíte integrada Spring, porém,
+prepara PostgreSQL 18 vazios pelo pacote independente `database/`, desabilita o
+Flyway e inicia a aplicação exclusivamente com a role de runtime. Os históricos
+não são misturados: um banco é preparado por Flyway ou pelas migrações Drizzle.
 
 A equivalência é verificada em dois PostgreSQL 18 independentes pela comparação
 dos catálogos resultantes e por provas reais da separação entre as roles de

@@ -15,14 +15,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @SpringBootTest(
@@ -33,21 +30,18 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.doctor.password=valid-test-password",
             "server.servlet.session.cookie.secure=false"
         })
-class PatientMutationApiIntegrationTest {
+class PatientMutationApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
 
-    @Autowired
-    private JdbcTemplate jdbc;
-
     @BeforeEach
     void clearBusinessData() {
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 TRUNCATE TABLE
                     attachment,
                     addendum,

@@ -12,13 +12,12 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 class AppointmentRestartIntegrationTest {
 
     @Test
     void overlappingAppointmentStillConflictsAfterApplicationRestart() throws Exception {
-        try (var postgresql = new PostgreSQLContainer("postgres:18.4")) {
+        try (var postgresql = new DrizzlePostgreSQLContainer()) {
             postgresql.start();
             String patientId;
 
@@ -58,7 +57,7 @@ class AppointmentRestartIntegrationTest {
         }
     }
 
-    private ConfigurableApplicationContext startApplication(PostgreSQLContainer postgresql) {
+    private ConfigurableApplicationContext startApplication(DrizzlePostgreSQLContainer postgresql) {
         return SpringApplication.run(
                 PrimeiroProntuarioApplication.class,
                 "--server.port=0",
@@ -66,6 +65,7 @@ class AppointmentRestartIntegrationTest {
                 "--DB_URL=" + postgresql.getJdbcUrl(),
                 "--DB_USERNAME=" + postgresql.getUsername(),
                 "--DB_PASSWORD=" + postgresql.getPassword(),
+                "--spring.flyway.enabled=false",
                 "--app.doctor.username=doctor",
                 "--app.doctor.password=valid-test-password");
     }

@@ -21,7 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -29,10 +28,8 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @Import(AppointmentApiIntegrationTest.FixedClockConfiguration.class)
@@ -45,21 +42,18 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.time-zone=America/Sao_Paulo",
             "server.servlet.session.cookie.secure=false"
         })
-class AppointmentApiIntegrationTest {
+class AppointmentApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
 
-    @Autowired
-    private JdbcTemplate jdbc;
-
     @BeforeEach
     void clearBusinessData() {
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 TRUNCATE TABLE
                     attachment,
                     addendum,
@@ -418,7 +412,7 @@ class AppointmentApiIntegrationTest {
         var created = createAppointment(client, patientId, "2030-02-11T10:00:00", 30);
         var appointmentId = JsonPath.<String>read(created.body(), "$.id");
         var knownVersion = JsonPath.<Integer>read(created.body(), "$.version");
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT audit_event_reject_appointment_rescheduled
                 CHECK (action <> 'APPOINTMENT_RESCHEDULED')
@@ -429,7 +423,8 @@ class AppointmentApiIntegrationTest {
         try {
             failed = rescheduleAppointment(client, appointmentId, "2030-02-11T11:00:00", 30, knownVersion);
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_appointment_rescheduled");
+            executeAsMigration(
+                    POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_appointment_rescheduled");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);
@@ -453,7 +448,7 @@ class AppointmentApiIntegrationTest {
         var created = createAppointment(client, patientId, "2030-02-12T10:00:00", 30);
         var appointmentId = JsonPath.<String>read(created.body(), "$.id");
         var knownVersion = JsonPath.<Integer>read(created.body(), "$.version");
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT audit_event_reject_appointment_status_changed
                 CHECK (action <> 'APPOINTMENT_STATUS_CHANGED')
@@ -464,7 +459,9 @@ class AppointmentApiIntegrationTest {
         try {
             failed = changeAppointmentStatus(client, appointmentId, "CONFIRMED", knownVersion);
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_appointment_status_changed");
+            executeAsMigration(
+                    POSTGRESQL,
+                    "ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_appointment_status_changed");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);

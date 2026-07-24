@@ -4,9 +4,10 @@ Este pacote usa Node e Drizzle somente para declarar e migrar o schema
 PostgreSQL. Ele não participa da compilação, da imagem ou do processo runtime da
 API Spring.
 
-Durante a etapa de expansão, o Flyway continua sendo o migrador usado pelo
-Spring. O baseline Drizzle é um caminho paralelo para bancos vazios; não o
-execute sobre um banco já versionado pelo Flyway.
+Durante esta etapa de expansão, o runtime Spring já implantado continua usando
+Flyway. A suíte integrada Spring prepara bancos vazios pelo baseline Drizzle,
+desabilita o Flyway e conecta a aplicação somente com a role de runtime. Não
+execute o baseline sobre um banco já versionado pelo Flyway.
 
 ## Pré-requisitos
 
@@ -70,3 +71,11 @@ descartável. Ela confirma que migration não é superusuária nem cria roles, m
 consegue criar e alterar objetos. A runtime conecta, usa o schema, executa DML
 e usa sequences atuais ou futuras, mas recebe `42501` ao tentar DDL persistente
 ou temporário ou assumir a role de migration.
+
+A suíte Spring completa também exige Docker e Node 24. Ela cria as roles
+efêmeras, aplica os artefatos versionados com `npm run migrate` e executa a API
+somente com a role de runtime:
+
+```bash
+sg docker -c '../mvnw verify'
+```

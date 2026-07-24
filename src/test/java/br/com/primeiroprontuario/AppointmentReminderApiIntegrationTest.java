@@ -28,7 +28,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @Import(AppointmentReminderApiIntegrationTest.TestClockConfiguration.class)
@@ -41,11 +40,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.time-zone=America/Sao_Paulo",
             "server.servlet.session.cookie.secure=false"
         })
-class AppointmentReminderApiIntegrationTest {
+class AppointmentReminderApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;

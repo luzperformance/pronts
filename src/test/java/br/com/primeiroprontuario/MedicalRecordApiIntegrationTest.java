@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @SpringBootTest(
@@ -43,11 +42,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "spring.jpa.properties.hibernate.generate_statistics=true"
         })
 @Import(MedicalRecordApiIntegrationTest.TestClockConfiguration.class)
-class MedicalRecordApiIntegrationTest {
+class MedicalRecordApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;

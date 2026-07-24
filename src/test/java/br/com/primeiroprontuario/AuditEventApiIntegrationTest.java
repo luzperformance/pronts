@@ -30,7 +30,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @Import(AuditEventApiIntegrationTest.MutableClockConfiguration.class)
@@ -42,13 +41,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.doctor.password=valid-test-password",
             "server.servlet.session.cookie.secure=false"
         })
-class AuditEventApiIntegrationTest {
+class AuditEventApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     private static final MutableClock CLOCK = new MutableClock();
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
@@ -58,7 +57,7 @@ class AuditEventApiIntegrationTest {
 
     @BeforeEach
     void clearBusinessData() {
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 TRUNCATE TABLE
                     attachment,
                     addendum,

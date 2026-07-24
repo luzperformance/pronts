@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @SpringBootTest(
@@ -41,11 +40,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "server.servlet.session.cookie.secure=false"
         })
 @Import(AddendumApiIntegrationTest.TestClockConfiguration.class)
-class AddendumApiIntegrationTest {
+class AddendumApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
@@ -193,7 +192,7 @@ class AddendumApiIntegrationTest {
         finalizeConsultation(client, consultationId);
         var auditBefore = get(client, "/api/v1/audit-events?action=ADDENDUM_ADDED");
         var auditCountBefore = JsonPath.<Integer>read(auditBefore.body(), "$.totalElements");
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT pp015_force_audit_failure
                 CHECK (action <> 'ADDENDUM_ADDED') NOT VALID
@@ -208,7 +207,7 @@ class AddendumApiIntegrationTest {
                     }
                     """);
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT pp015_force_audit_failure");
+            executeAsMigration(POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT pp015_force_audit_failure");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);

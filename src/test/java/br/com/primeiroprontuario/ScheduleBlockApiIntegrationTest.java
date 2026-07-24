@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @Import(ScheduleBlockApiIntegrationTest.FixedClockConfiguration.class)
@@ -44,11 +43,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.time-zone=America/Sao_Paulo",
             "server.servlet.session.cookie.secure=false"
         })
-class ScheduleBlockApiIntegrationTest {
+class ScheduleBlockApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
@@ -204,7 +203,7 @@ class ScheduleBlockApiIntegrationTest {
     @Test
     void blockAndCreationAuditRollBackTogether() throws Exception {
         var client = authenticatedClient();
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT audit_event_reject_schedule_block_created
                 CHECK (action <> 'SCHEDULE_BLOCK_CREATED')
@@ -215,7 +214,8 @@ class ScheduleBlockApiIntegrationTest {
         try {
             failedCreation = createBlock(client, "2030-01-21T10:00:00", "2030-01-21T10:30:00", "Auditoria obrigatória");
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_schedule_block_created");
+            executeAsMigration(
+                    POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_schedule_block_created");
         }
 
         var retriedCreation =
@@ -231,7 +231,7 @@ class ScheduleBlockApiIntegrationTest {
         var created = createBlock(client, "2030-01-22T10:00:00", "2030-01-22T10:30:00", "Auditoria obrigatória");
         assertThat(created.statusCode()).isEqualTo(201);
         var blockId = JsonPath.<String>read(created.body(), "$.id");
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT audit_event_reject_schedule_block_removed
                 CHECK (action <> 'SCHEDULE_BLOCK_REMOVED')
@@ -242,7 +242,8 @@ class ScheduleBlockApiIntegrationTest {
         try {
             failedRemoval = mutation(client, "DELETE", "/api/v1/schedule-blocks/" + blockId, "");
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_schedule_block_removed");
+            executeAsMigration(
+                    POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_schedule_block_removed");
         }
 
         var listed = get(client, "/api/v1/schedule-blocks?from=2030-01-22T09:00:00&to=2030-01-22T11:00:00");

@@ -40,7 +40,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @SpringBootTest(
@@ -52,13 +51,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "server.servlet.session.cookie.secure=false"
         })
 @Import(AttachmentApiIntegrationTest.TestStorageConfiguration.class)
-class AttachmentApiIntegrationTest {
+class AttachmentApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     private static final Path STORAGE_DIRECTORY = createStorageDirectory();
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
@@ -283,7 +282,7 @@ class AttachmentApiIntegrationTest {
         var auditBeforeFailure = get(client, "/api/v1/audit-events?action=ATTACHMENT_UPLOADED&size=100");
         var auditCountBeforeFailure = JsonPath.<Number>read(auditBeforeFailure.body(), "$.totalElements")
                 .longValue();
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT pp016_force_audit_failure
                 CHECK (action <> 'ATTACHMENT_UPLOADED')
@@ -294,7 +293,7 @@ class AttachmentApiIntegrationTest {
         try {
             failed = upload(client, patientId, "auditoria.pdf", "application/pdf", minimalPdf(), null);
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT pp016_force_audit_failure");
+            executeAsMigration(POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT pp016_force_audit_failure");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);
@@ -528,7 +527,7 @@ class AttachmentApiIntegrationTest {
         var created = upload(client, patientId, "laudo.pdf", "application/pdf", content, null);
         var attachmentId = JsonPath.<String>read(created.body(), "$.id");
         var filesBeforeRemoval = storedFileCount();
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT pp018_force_removal_audit_failure
                 CHECK (action <> 'ATTACHMENT_REMOVED')
@@ -539,7 +538,7 @@ class AttachmentApiIntegrationTest {
         try {
             failed = remove(client, attachmentId, "Auditoria indisponível");
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT pp018_force_removal_audit_failure");
+            executeAsMigration(POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT pp018_force_removal_audit_failure");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);
@@ -564,7 +563,7 @@ class AttachmentApiIntegrationTest {
         var created = upload(client, patientId, "laudo.pdf", "application/pdf", minimalPdf(), null);
         var attachmentId = JsonPath.<String>read(created.body(), "$.id");
         var filesBeforeRemoval = storedFileCount();
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE attachment
                 ADD CONSTRAINT pp018_force_cleanup_completion_failure
                 CHECK (status <> 'REMOVED' OR binary_cleanup_pending)
@@ -575,7 +574,8 @@ class AttachmentApiIntegrationTest {
         try {
             failed = remove(client, attachmentId, "Anexo indevido");
         } finally {
-            jdbc.execute("ALTER TABLE attachment DROP CONSTRAINT pp018_force_cleanup_completion_failure");
+            executeAsMigration(
+                    POSTGRESQL, "ALTER TABLE attachment DROP CONSTRAINT pp018_force_cleanup_completion_failure");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);

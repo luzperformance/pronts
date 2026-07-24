@@ -23,7 +23,6 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @SpringBootTest(
@@ -34,11 +33,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.doctor.password=valid-test-password",
             "server.servlet.session.cookie.secure=false"
         })
-class ConsultationApiIntegrationTest {
+class ConsultationApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
@@ -427,7 +426,7 @@ class ConsultationApiIntegrationTest {
         var appointmentId = createAppointment(client, patientId, "2030-03-04T10:00:00");
         var created = createConsultation(client, patientId, completeClinicalContent(appointmentId));
         var consultationId = JsonPath.<String>read(created.body(), "$.id");
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT pp013_force_audit_failure
                 CHECK (target_id <> '%s'::uuid)
@@ -437,7 +436,7 @@ class ConsultationApiIntegrationTest {
         try {
             failed = finalizeConsultation(client, consultationId);
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT pp013_force_audit_failure");
+            executeAsMigration(POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT pp013_force_audit_failure");
         }
 
         assertThat(failed.statusCode()).isEqualTo(500);

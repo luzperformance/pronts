@@ -17,7 +17,6 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 @SpringBootTest(
@@ -28,11 +27,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
             "app.doctor.password=valid-test-password",
             "server.servlet.session.cookie.secure=false"
         })
-class PatientApiIntegrationTest {
+class PatientApiIntegrationTest extends DrizzleSpringIntegrationTest {
 
     @Container
     @ServiceConnection
-    private static final PostgreSQLContainer POSTGRESQL = new PostgreSQLContainer("postgres:18.4");
+    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
 
     @LocalServerPort
     private int port;
@@ -195,7 +194,7 @@ class PatientApiIntegrationTest {
     void patientAndAuditCreationRollBackTogether() throws Exception {
         var client = authenticatedClient();
         var patient = requiredPatientJson("168.995.350-09");
-        jdbc.execute("""
+        executeAsMigration(POSTGRESQL, """
                 ALTER TABLE audit_event
                 ADD CONSTRAINT audit_event_reject_patient_created
                 CHECK (action <> 'PATIENT_CREATED')
@@ -206,7 +205,8 @@ class PatientApiIntegrationTest {
         try {
             failedCreation = postPatient(client, patient);
         } finally {
-            jdbc.execute("ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_patient_created");
+            executeAsMigration(
+                    POSTGRESQL, "ALTER TABLE audit_event DROP CONSTRAINT audit_event_reject_patient_created");
         }
 
         var retriedCreation = postPatient(client, patient);
