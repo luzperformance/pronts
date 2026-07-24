@@ -90,6 +90,8 @@ ou capturas de tela.
 - contrato completo: [`docs/openapi.yaml`](docs/openapi.yaml);
 - schema e baseline Drizzle paralelos:
   [`database/README.md`](database/README.md);
+- gate manual de schema no Neon sem importação:
+  [`docs/neon-production-cutover.md`](docs/neon-production-cutover.md);
 - configuração de execução: [`docs/runtime-configuration.md`](docs/runtime-configuration.md);
 - sessão, cookie, CSRF, CORS e exemplos: [`docs/http-api.md`](docs/http-api.md);
 - Docker, Kubernetes local, Traefik e TLS:

@@ -65,7 +65,6 @@ class AppointmentRestartIntegrationTest {
                 "--DB_URL=" + postgresql.getJdbcUrl(),
                 "--DB_USERNAME=" + postgresql.getUsername(),
                 "--DB_PASSWORD=" + postgresql.getPassword(),
-                "--spring.flyway.enabled=false",
                 "--app.doctor.username=doctor",
                 "--app.doctor.password=valid-test-password");
     }

@@ -283,16 +283,4 @@ wait_for_https
 authenticate
 verify_persisted_data
 
-kubectl delete pod postgresql-0 --namespace "$PP_NAMESPACE" --wait=true
-kubectl rollout status statefulset/postgresql \
-  --namespace "$PP_NAMESPACE" \
-  --timeout=180s
-kubectl wait deployment/primeiro-prontuario-api \
-  --namespace "$PP_NAMESPACE" \
-  --for=condition=Available \
-  --timeout=180s
-wait_for_https
-authenticate
-verify_persisted_data
-
 echo "Smoke PP-022 concluído: HTTPS, sessão, paciente, agenda, consulta, adendo, anexo e auditoria persistiram."

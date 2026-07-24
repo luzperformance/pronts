@@ -42,7 +42,11 @@ public class AuthSecurityConfiguration {
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorization -> authorization
-                        .requestMatchers(HttpMethod.GET, "/actuator/health")
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/actuator/health",
+                                "/actuator/health/liveness",
+                                "/actuator/health/readiness")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login")
                         .permitAll()

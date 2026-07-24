@@ -6,8 +6,8 @@
   "scripts": {
     "generate": "drizzle-kit generate --config=drizzle.config.ts",
     "migrate": "drizzle-kit migrate --config=drizzle.migrate.config.ts",
+    "rehearse:cutover": "tsx --test test/cutover-rehearsal.integration.test.ts",
     "test": "tsx --test test/**/*.test.ts",
-    "verify:equivalence": "tsx --test test/schema-equivalence.integration.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

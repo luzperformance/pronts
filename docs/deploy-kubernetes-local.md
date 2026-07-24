@@ -1,13 +1,15 @@
-# Implantação Kubernetes local
+# Implantação Kubernetes com Neon
 
-Este laboratório executa a API e o PostgreSQL 18 dentro de um cluster Kubernetes
-local já existente. O Traefik instalado no cluster é a única entrada acessível
-pela máquina. A API e o PostgreSQL permanecem em `Service` do tipo `ClusterIP`.
+Este caminho executa uma única réplica da API em um cluster Kubernetes local já
+existente e conecta diretamente ao Neon por JDBC. O banco não é iniciado nem
+administrado pelo cluster. O Traefik instalado no cluster é a única entrada
+acessível pela máquina; a API permanece em `Service` do tipo `ClusterIP`.
 
 O procedimento não instala nem administra Kubernetes, Traefik ou a classe de
 armazenamento. Use um cluster descartável ou dedicado à demonstração. São
-necessários Docker, `kubectl`, OpenSSL, Bash, `curl`, `jq`, `base64`, `cmp` e um
-mecanismo da distribuição do cluster para importar imagens locais.
+necessários Docker, `kubectl`, OpenSSL, Bash, `curl`, `jq`, `base64`, `cmp`, um
+schema Neon já migrado e um mecanismo da distribuição do cluster para importar
+imagens locais.
 
 Antes de começar, confirme:
 
@@ -24,12 +26,12 @@ provisionar PVCs `ReadWriteOnce`. Os pontos de entrada do Traefik devem se chama
 `web` e `websecure` e estar acessíveis pela máquina local. Se esses nomes forem
 diferentes, adapte somente os manifestos de Ingress ao cluster documentado.
 
-Também confirme que a cópia de trabalho não contém credenciais nem artefatos de uma
-demonstração anterior:
+Também confirme que a cópia de trabalho não contém credenciais nem artefatos de
+uma demonstração anterior:
 
 ```bash
 git status --short
-git grep -n 'REPLACE_WITH_LOCAL_' -- deploy/kubernetes
+git grep -n 'REPLACE_WITH_' -- deploy/kubernetes
 ```
 
 ## 1. Construir e disponibilizar a imagem
@@ -52,7 +54,7 @@ local. Por exemplo, um cluster `kind` usa `kind load docker-image`; um cluster
 `k3d` usa `k3d image import`. A criação e a administração do cluster continuam
 fora deste ticket.
 
-## 2. Criar credenciais locais
+## 2. Criar o Secret de runtime
 
 O arquivo versionado contém somente nomes de chaves e marcadores:
 
@@ -61,9 +63,22 @@ cp deploy/kubernetes/credentials.example.env \
   deploy/kubernetes/credentials.local.env
 ```
 
-Edite `credentials.local.env` com valores exclusivos desta demonstração. O
-arquivo local é ignorado pelo Git. Crie o `Secret` sem gravar seus valores em um
-manifesto:
+No painel do Neon, selecione a branch, a role de runtime e o banco. Desative
+**Connection pooling** para obter o endpoint direto, cujo host não contém
+`-pooler`. Converta a conexão para o formato JDBC e mantenha
+`sslmode=require`, por exemplo:
+
+```text
+jdbc:postgresql://ep-<endpoint>.<regiao>.aws.neon.tech/<banco>?sslmode=require
+```
+
+Edite `credentials.local.env` com essa URL, o usuário e a senha da role de
+runtime e as credenciais do médico. O arquivo local é ignorado pelo Git. Não
+coloque no arquivo a role proprietária ou qualquer credencial usada para
+migração. O cluster recebe somente `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
+`DOCTOR_USERNAME` e `DOCTOR_PASSWORD` como dados sensíveis da aplicação.
+
+Crie o `Secret` sem gravar seus valores em um manifesto:
 
 ```bash
 kubectl apply -f deploy/kubernetes/00-namespace.yaml
@@ -74,7 +89,9 @@ kubectl create secret generic primeiro-prontuario-credentials \
   --output yaml | kubectl apply -f -
 ```
 
-Não use dados, senhas ou anexos reais neste ambiente de estudo.
+Não use dados, senhas ou anexos reais neste ambiente de estudo. Migrações são
+executadas antes do deploy, fora do cluster; o perfil `prod` mantém o Flyway
+desabilitado.
 
 ## 3. Criar certificado TLS local
 
@@ -130,8 +147,7 @@ acessível. Em clusters que publicam o Traefik no loopback, a entrada é:
 127.0.0.1 prontuario.local
 ```
 
-Não crie `NodePort`, `LoadBalancer`, `hostPort` ou `port-forward` para a API ou
-para o PostgreSQL.
+Não crie `NodePort`, `LoadBalancer`, `hostPort` ou `port-forward` para a API.
 
 ## 4. Aplicar a topologia
 
@@ -140,27 +156,24 @@ Depois dos dois Secrets:
 ```bash
 kubectl apply -f deploy/kubernetes/10-configmap.yaml
 kubectl apply -f deploy/kubernetes/20-attachment-pvc.yaml
-kubectl apply -f deploy/kubernetes/30-postgresql.yaml
 kubectl apply -f deploy/kubernetes/40-api.yaml
 kubectl apply -f deploy/kubernetes/50-traefik-middleware.yaml
 kubectl apply -f deploy/kubernetes/60-ingress.yaml
-kubectl rollout status statefulset/postgresql \
-  --namespace primeiro-prontuario \
-  --timeout=180s
 kubectl rollout status deployment/primeiro-prontuario-api \
   --namespace primeiro-prontuario \
   --timeout=180s
 ```
 
-O PostgreSQL é exatamente a série 18 e recebe um PVC próprio pelo
-`volumeClaimTemplates` do `StatefulSet`. Os binários recebem o PVC
-`primeiro-prontuario-attachments`. Eles são privados, distintos e
-`ReadWriteOnce`; nunca monte um no caminho do outro.
+Os anexos permanecem no PVC `primeiro-prontuario-attachments`, privado e
+`ReadWriteOnce`. A troca do banco para Neon não altera esse volume nem seu
+caminho de montagem.
 
-As sondas de inicialização, prontidão e vitalidade da API usam somente
-`/actuator/health`. A rota responde sem componentes ou detalhes. A
-sonda de prontidão só fica saudável quando a aplicação iniciou e o indicador da
-fonte de dados confirma a conexão com o PostgreSQL.
+A startup probe usa `/actuator/health/liveness` e concede até cinco minutos para
+a inicialização e a retomada do compute Neon. A liveness usa o mesmo grupo e
+mede somente o processo Spring/JVM, sem consultar o banco. A readiness usa
+`/actuator/health/readiness`, inclui o indicador JDBC e fica indisponível quando
+o Neon não aceita conexões. Assim, uma falha do banco retira o pod do serviço sem
+reiniciá-lo continuamente.
 
 Os cabeçalhos encaminhados ficam desabilitados por padrão. Este `Deployment` ativa o perfil
 `prod`, que usa a integração nativa do Tomcat e aceita os cabeçalhos somente quando
@@ -171,17 +184,17 @@ fora da rede confiável não consegue transformar um cabeçalho forjado em orige
 HTTPS. O Traefik informa o esquema HTTPS e a aplicação emite os cookies de
 sessão e CSRF com `Secure`.
 
-Em banco vazio, a inicialização aplica V1–V16 e o Hibernate valida o resultado. Se a
-soma de verificação ou o histórico Flyway for incompatível, o pod não fica pronto; não use
-`repair`, `baseline` ou `ddl-auto` para mascarar a divergência.
+O schema deve existir antes deste caminho de implantação. O Spring usa somente a
+role de runtime, mantém `ddl-auto=validate`, não executa Flyway e inicia um pool
+HikariCP com mínimo de uma conexão ociosa e máximo de cinco conexões.
 
 ## 5. Executar o teste de fumaça com persistência
 
-O teste de fumaça usa a fronteira REST existente. Ele verifica redirecionamento para HTTPS,
-certificado, saúde, autenticação, atributos do cookie, CSRF, paciente, agenda,
-consulta, finalização, adendo, prontuário, anexo, baixamento e auditoria. Em
-seguida recria separadamente o pod da API e o pod do PostgreSQL e repete consulta
-e baixamento:
+O teste de fumaça usa a fronteira REST existente. Ele verifica redirecionamento
+para HTTPS, certificado, saúde, autenticação, atributos do cookie, CSRF,
+paciente, agenda, consulta, finalização, adendo, prontuário, anexo, baixamento e
+auditoria. Em seguida recria o pod da API e repete consulta e baixamento,
+demonstrando que o PVC de anexos e o banco Neon permanecem independentes do pod:
 
 ```bash
 chmod +x scripts/smoke-kubernetes.sh
@@ -192,16 +205,14 @@ Inspecione também a fronteira de rede e os volumes:
 
 ```bash
 kubectl get service,pvc,ingress --namespace primeiro-prontuario
-kubectl get deployment,statefulset --namespace primeiro-prontuario
+kubectl get deployment --namespace primeiro-prontuario
 kubectl get pods --namespace primeiro-prontuario \
   --output custom-columns=NAME:.metadata.name,USER:.spec.containers[*].securityContext.runAsUser
 ```
 
-Os PVCs preservam dados durante a recriação de pods, mas **PVC não é cópia de segurança**.
-O procedimento manual e o ensaio descartável de cópia conjunta do PostgreSQL e
-dos anexos estão em [`backup-restore.md`](backup-restore.md). Automatizar
-cópias de segurança, criptografia de infraestrutura e recuperação fica fora deste
-laboratório.
+O PVC preserva os anexos durante a recriação de pods, mas **PVC não é cópia de
+segurança**. Automatizar cópias de segurança, criptografia de infraestrutura e
+recuperação fica fora deste laboratório.
 
 ## 6. Remover a demonstração
 

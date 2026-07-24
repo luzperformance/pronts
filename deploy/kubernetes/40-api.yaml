@@ -50,6 +50,11 @@ spec:
             - configMapRef:
                 name: primeiro-prontuario-config
           env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: primeiro-prontuario-credentials
+                  key: database-url
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -75,22 +80,25 @@ spec:
               containerPort: 8080
           startupProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: http
             failureThreshold: 30
-            periodSeconds: 2
+            periodSeconds: 10
+            timeoutSeconds: 2
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               port: http
             failureThreshold: 3
             periodSeconds: 5
+            timeoutSeconds: 2
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: http
             failureThreshold: 3
             periodSeconds: 10
+            timeoutSeconds: 2
           volumeMounts:
             - name: attachments
               mountPath: /var/lib/primeiro-prontuario/attachments

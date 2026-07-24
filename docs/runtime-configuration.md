@@ -9,9 +9,9 @@ ambiente exposto.
 
 | Variável | Obrigatória | Uso |
 | --- | --- | --- |
-| `DB_URL` | sim fora dos testes | JDBC do PostgreSQL |
-| `DB_USERNAME` | sim fora dos testes | usuário do PostgreSQL |
-| `DB_PASSWORD` | sim fora dos testes | senha do PostgreSQL; não deve ser versionada |
+| `DB_URL` | sim fora dos testes | JDBC do endpoint direto Neon, sem `-pooler`, com TLS obrigatório |
+| `DB_USERNAME` | sim fora dos testes | role de runtime do PostgreSQL |
+| `DB_PASSWORD` | sim fora dos testes | senha da role de runtime; não deve ser versionada |
 | `DOCTOR_USERNAME` | sim | usuário único do médico |
 | `DOCTOR_PASSWORD` | sim | senha inicial; a aplicação persiste somente o resumo criptográfico adaptativo |
 | `APP_CORS_ALLOWED_ORIGIN` | não | única origem exata aceita; vazia rejeita todo acesso entre origens |
@@ -28,8 +28,11 @@ leitura do arquivo no limite público. Todas as listagens paginadas aceitam
 
 ## Produção atrás do Traefik
 
-Ative o perfil `prod`. Ele fixa `Secure` no cookie de sessão, produz logs JSON e
-usa o processamento nativo de cabeçalhos encaminhados do Tomcat. O
+Ative o perfil `prod`. Ele desabilita o Flyway e configura o HikariCP com
+`minimum-idle=1` e `maximum-pool-size=5`. No Kubernetes, o `ConfigMap` também
+impõe `sslmode=require` ao driver PostgreSQL. O perfil fixa `Secure` no cookie de
+sessão, produz logs JSON e usa o processamento nativo de cabeçalhos encaminhados
+do Tomcat. O
 `X-Forwarded-Proto` só é considerado quando a conexão imediata vem de
 `TRUSTED_PROXY_NETWORKS`; um cliente fora dessa rede não consegue declarar a si
 mesmo como HTTPS.

@@ -45,6 +45,8 @@ DATABASE_URL='postgresql://migration-role:password@host:5432/database?sslmode=re
 ```
 
 Não salve a URL em `.env`, configuração do Spring ou artefatos do repositório.
+O gate, o provisionamento manual das roles e a ordem completa do corte estão em
+[`../docs/neon-production-cutover.md`](../docs/neon-production-cutover.md).
 
 ## Verificar
 
@@ -71,6 +73,13 @@ descartável. Ela confirma que migration não é superusuária nem cria roles, m
 consegue criar e alterar objetos. A runtime conecta, usa o schema, executa DML
 e usa sequences atuais ou futuras, mas recebe `42501` ao tentar DDL persistente
 ou temporário ou assumir a role de migration.
+
+O ensaio completo do gate valida essa equivalência e depois repete o corte em
+outro PostgreSQL 18 vazio, sem aceitar uma URL externa:
+
+```bash
+npm run rehearse:cutover
+```
 
 A suíte Spring completa também exige Docker e Node 24. Ela cria as roles
 efêmeras, aplica os artefatos versionados com `npm run migrate` e executa a API
