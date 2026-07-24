@@ -28,7 +28,8 @@ leitura do arquivo no limite público. Todas as listagens paginadas aceitam
 
 ## Produção atrás do Traefik
 
-Ative o perfil `prod`. Ele desabilita o Flyway e configura o HikariCP com
+Ative o perfil `prod`. O Spring não contém migrador de schema; o deploy só pode
+começar depois do gate Drizzle. O perfil configura o HikariCP com
 `minimum-idle=1` e `maximum-pool-size=5`. No Kubernetes, o `ConfigMap` também
 impõe `sslmode=require` ao driver PostgreSQL. O perfil fixa `Secure` no cookie de
 sessão, produz logs JSON e usa o processamento nativo de cabeçalhos encaminhados

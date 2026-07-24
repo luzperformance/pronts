@@ -24,23 +24,20 @@ pública do domínio. Testes isolados de controlador/serviço/repositório, dupl
 internos e H2 foram rejeitados porque acoplariam os testes à implementação ou
 mudariam a semântica do banco.
 
-## ADR-003 — PostgreSQL versionado durante a expansão para Drizzle
+## ADR-003 — Drizzle como único escritor do schema
 
 **Situação:** adotada.
 
-O runtime Spring já implantado continua executando as 16 migrações Flyway nesta
-etapa e o Hibernate usa `ddl-auto=validate`. A suíte integrada Spring, porém,
-prepara PostgreSQL 18 vazios pelo pacote independente `database/`, desabilita o
-Flyway e inicia a aplicação exclusivamente com a role de runtime. Os históricos
-não são misturados: um banco é preparado por Flyway ou pelas migrações Drizzle.
+O pacote independente `database/` e seu SQL Drizzle versionado são o único
+caminho suportado de migração. O gate manual aplica o schema antes do deploy com
+a role de migração; o Spring não contém ferramenta de migração, usa somente a
+role de runtime e mantém `ddl-auto=validate`.
 
-A equivalência é verificada em dois PostgreSQL 18 independentes pela comparação
-dos catálogos resultantes e por provas reais da separação entre as roles de
-migração e runtime.
-
-Node e Drizzle são ferramentas de migração e não entram na imagem ou no processo
-Spring. Geração automática de esquema pelo Hibernate, scripts manuais fora de
-versão e H2 permanecem rejeitados.
+As antigas migrações foram retiradas depois das provas de equivalência e da
+integração Spring sobre PostgreSQL 18 preparado pelo Drizzle. PostgreSQL
+18/Testcontainers continua validando schema, privilégios e comportamento REST.
+Node e Drizzle não entram na imagem nem no processo Spring. Geração automática
+de schema pelo Hibernate, scripts não versionados e H2 permanecem rejeitados.
 
 ## ADR-004 — Consistência explícita nas mutações
 
@@ -95,18 +92,18 @@ Erros públicos usam `application/problem+json`, tipos `urn:problem:*` e
 internos. Um envelope de erro proprietário e rastreamentos de pilha públicos foram
 rejeitados.
 
-## ADR-009 — Implantação Kubernetes local mínima
+## ADR-009 — Kubernetes local com Neon e anexos persistentes
 
 **Situação:** adotada.
 
 A API usa imagem de múltiplos estágios sem privilégios de superusuário,
-`Deployment` de uma réplica com
-`Recreate` e PVC `ReadWriteOnce`. PostgreSQL 18 usa `StatefulSet` de uma réplica
-e PVC separado. Ambos usam `ClusterIP`; somente o Traefik recebe tráfego da
-máquina e termina TLS local.
+`Deployment` de uma réplica com `Recreate`, `Service` `ClusterIP` e conexão JDBC
+direta com TLS ao Neon. O cluster não executa PostgreSQL nem recebe credenciais
+de migração. Somente os anexos usam PVC `ReadWriteOnce`, e somente o Traefik
+recebe tráfego da máquina e termina TLS local.
 
-Docker Compose, Helm, Kustomize, operadores, HPA, múltiplas réplicas, GitOps,
-nuvem, banco gerenciado, domínio público e CA pública foram rejeitados pelo
+PostgreSQL in-cluster, Docker Compose, Helm, Kustomize, operadores, HPA,
+múltiplas réplicas, GitOps, domínio público e CA pública foram rejeitados pelo
 escopo acadêmico.
 
 ## Princípios de implementação observados

@@ -1,13 +1,9 @@
 # Pacote de banco
 
-Este pacote usa Node e Drizzle somente para declarar e migrar o schema
-PostgreSQL. Ele não participa da compilação, da imagem ou do processo runtime da
-API Spring.
-
-Durante esta etapa de expansão, o runtime Spring já implantado continua usando
-Flyway. A suíte integrada Spring prepara bancos vazios pelo baseline Drizzle,
-desabilita o Flyway e conecta a aplicação somente com a role de runtime. Não
-execute o baseline sobre um banco já versionado pelo Flyway.
+Este pacote é o único caminho suportado para declarar e migrar o schema
+PostgreSQL. Node e Drizzle não participam da compilação, da imagem ou do processo
+runtime da API Spring. O Spring conecta somente com a role de runtime e valida o
+schema existente com Hibernate.
 
 ## Pré-requisitos
 
@@ -51,39 +47,24 @@ O gate, o provisionamento manual das roles e a ordem completa do corte estão em
 ## Verificar
 
 Os testes exigem Docker. A suíte completa cria roles e bancos PostgreSQL 18
-descartáveis, sem usar credenciais ou valores reais do Neon:
+descartáveis, gera e aplica os artefatos Drizzle, valida o corte em banco vazio e
+confere a separação de privilégios, sem usar credenciais ou valores reais do
+Neon:
 
 ```bash
 npm test
 ```
 
-A prova focada de equivalência pode ser executada separadamente:
-
-```bash
-npm run verify:equivalence
-```
-
-Ela prepara dois PostgreSQL 18 independentes. Um recebe as migrações Flyway
-V1–V16 pelo Flyway 12.4.0; o outro recebe o baseline Drizzle. A comparação
-falha por objeto divergente e cobre relações, colunas, tipos, nulabilidade,
-defaults, constraints, índices, sequences, funções, triggers e políticas.
-
-A mesma prova cria as roles de bootstrap, migration e runtime apenas no arranjo
-descartável. Ela confirma que migration não é superusuária nem cria roles, mas
-consegue criar e alterar objetos. A runtime conecta, usa o schema, executa DML
-e usa sequences atuais ou futuras, mas recebe `42501` ao tentar DDL persistente
-ou temporário ou assumir a role de migration.
-
-O ensaio completo do gate valida essa equivalência e depois repete o corte em
-outro PostgreSQL 18 vazio, sem aceitar uma URL externa:
+O ensaio focado do gate repete o corte em PostgreSQL 18 vazio, sem aceitar uma
+URL externa:
 
 ```bash
 npm run rehearse:cutover
 ```
 
-A suíte Spring completa também exige Docker e Node 24. Ela cria as roles
-efêmeras, aplica os artefatos versionados com `npm run migrate` e executa a API
-somente com a role de runtime:
+A suíte Spring completa também exige Docker e Node 24. Ela cria roles efêmeras,
+aplica os artefatos versionados com `npm run migrate` e executa a API somente
+com a role de runtime:
 
 ```bash
 sg docker -c '../mvnw verify'

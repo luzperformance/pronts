@@ -53,12 +53,11 @@ sg docker -c './mvnw verify'
 ```
 
 `rehearse:cutover` sempre cria seu próprio PostgreSQL 18 descartável. O comando
-primeiro compara Flyway V1–V16 e o baseline Drizzle em bancos independentes;
-depois cria outro banco vazio, provisiona roles efêmeras fora da migração,
-aplica o mesmo baseline versionado com a role de migração e acessa o resultado
-com a role de runtime. O ensaio falha se houver histórico anterior, se o
-artefato mudar durante a execução ou se aparecer qualquer conta de médico ou
-dado clínico. Ele não aceita URL externa e não executa importação.
+começa em banco vazio, provisiona roles efêmeras fora da migração, aplica o SQL
+Drizzle versionado com a role de migração e acessa o resultado com a role de
+runtime. O ensaio falha se houver histórico anterior, se o artefato mudar
+durante a execução ou se aparecer qualquer conta de médico ou dado clínico. Ele
+não aceita URL externa e não executa importação.
 
 O gate permanece fechado se qualquer comando falhar. Não use `repair`,
 `baseline`, geração Hibernate, alteração manual do baseline ou exclusão de
@@ -323,15 +322,18 @@ de dados neste corte.
 - [migrações de schema devem usar conexão direta](https://neon.com/docs/connect/connection-pooling#when-to-use-pooled-vs-direct-connections);
 - [`psql` conecta ao endpoint Neon por TLS](https://neon.com/docs/connect/query-with-psql-editor#connect-to-neon-with-psql).
 
-## Evidência do ensaio do ticket #5
+## Evidência anterior à remoção do legado
 
-Em 24 de julho de 2026, o ensaio foi executado somente em PostgreSQL 18.4
-descartável:
+Em 24 de julho de 2026, antes da remoção do caminho Flyway, as provas foram
+executadas somente em PostgreSQL 18.4 descartável:
 
-- equivalência Flyway V1–V16 × Drizzle: 2 testes verdes;
+- equivalência Flyway V1–V16 × Drizzle e privilégios: 2 testes verdes;
 - corte em banco vazio, roles externas e ausência de dados importados: 1 teste
   verde;
 - `npm run typecheck`: verde;
 - `sg docker -c './mvnw verify'`: 203 testes, Spotless e Checkstyle verdes;
 - nenhum projeto, branch, role, banco ou dado do Neon foi consultado ou
   modificado.
+
+Depois dessa evidência, o Flyway e V1–V16 deixaram de ser artefatos executáveis.
+O SQL em `database/drizzle/` passou a ser o único caminho suportado de migração.

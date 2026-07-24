@@ -11,6 +11,7 @@ Spring Boot com PostgreSQL 18. O projeto não possui interface web.
 Pré-requisitos para construção e testes:
 
 - JDK 21;
+- Node 24;
 - Docker acessível pelo usuário, usado por Testcontainers;
 - Bash e acesso à internet para a primeira resolução do Maven Wrapper.
 
@@ -42,17 +43,34 @@ local com valores exclusivamente fictícios:
 docker run --rm --name primeiro-prontuario-postgres \
   --publish 127.0.0.1:5432:5432 \
   --env POSTGRES_DB=primeiro_prontuario \
-  --env POSTGRES_USER=primeiro_prontuario \
+  --env POSTGRES_USER=primeiro_prontuario_migration \
   --env POSTGRES_PASSWORD=local-demo-password \
   postgres:18.4
 ```
 
-Em outro terminal:
+Em outro terminal, crie a role de runtime e aplique o schema versionado somente
+pelo Drizzle:
+
+```bash
+docker exec \
+  --env PGPASSWORD=local-demo-password \
+  primeiro-prontuario-postgres \
+  psql --username primeiro_prontuario_migration \
+    --dbname primeiro_prontuario \
+    --command "CREATE ROLE primeiro_prontuario_runtime LOGIN PASSWORD 'local-runtime-password'"
+cd database
+npm ci
+DATABASE_URL='postgresql://primeiro_prontuario_migration:local-demo-password@localhost:5432/primeiro_prontuario' \
+  npm run migrate
+cd ..
+```
+
+Depois inicie o Spring somente com a role de runtime:
 
 ```bash
 export DB_URL='jdbc:postgresql://localhost:5432/primeiro_prontuario'
-export DB_USERNAME='primeiro_prontuario'
-export DB_PASSWORD='local-demo-password'
+export DB_USERNAME='primeiro_prontuario_runtime'
+export DB_PASSWORD='local-runtime-password'
 export DOCTOR_USERNAME='doctor'
 export DOCTOR_PASSWORD='local-demo-doctor-password'
 export SESSION_COOKIE_SECURE='false'
@@ -60,9 +78,9 @@ export SESSION_COOKIE_SECURE='false'
 ```
 
 `SESSION_COOKIE_SECURE=false` é permitido somente nesse teste HTTP em loopback.
-A demonstração Kubernetes usa HTTPS e mantém o cookie seguro. Na primeira
-inicialização, o Flyway cria e valida o esquema; um histórico de migrações
-incompatível impede a inicialização.
+A demonstração Kubernetes usa HTTPS e mantém o cookie seguro. O Spring nunca
+cria nem migra o schema; ele apenas valida pelo Hibernate o schema previamente
+aplicado pelo Drizzle.
 
 ## Configuração
 
@@ -88,7 +106,7 @@ ou capturas de tela.
 ## Documentação verificável
 
 - contrato completo: [`docs/openapi.yaml`](docs/openapi.yaml);
-- schema e baseline Drizzle paralelos:
+- schema e migrações Drizzle:
   [`database/README.md`](database/README.md);
 - gate manual de schema no Neon sem importação:
   [`docs/neon-production-cutover.md`](docs/neon-production-cutover.md);

@@ -90,8 +90,7 @@ kubectl create secret generic primeiro-prontuario-credentials \
 ```
 
 Não use dados, senhas ou anexos reais neste ambiente de estudo. Migrações são
-executadas antes do deploy, fora do cluster; o perfil `prod` mantém o Flyway
-desabilitado.
+executadas antes do deploy, fora do cluster, somente pelo gate Drizzle.
 
 ## 3. Criar certificado TLS local
 
@@ -185,8 +184,9 @@ HTTPS. O Traefik informa o esquema HTTPS e a aplicação emite os cookies de
 sessão e CSRF com `Secure`.
 
 O schema deve existir antes deste caminho de implantação. O Spring usa somente a
-role de runtime, mantém `ddl-auto=validate`, não executa Flyway e inicia um pool
-HikariCP com mínimo de uma conexão ociosa e máximo de cinco conexões.
+role de runtime, mantém `ddl-auto=validate`, não possui caminho de migração e
+inicia um pool HikariCP com mínimo de uma conexão ociosa e máximo de cinco
+conexões.
 
 ## 5. Executar o teste de fumaça com persistência
 
