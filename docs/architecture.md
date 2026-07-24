@@ -24,14 +24,23 @@ pública do domínio. Testes isolados de controlador/serviço/repositório, dupl
 internos e H2 foram rejeitados porque acoplariam os testes à implementação ou
 mudariam a semântica do banco.
 
-## ADR-003 — PostgreSQL versionado por Flyway
+## ADR-003 — PostgreSQL versionado durante a expansão para Drizzle
 
 **Situação:** adotada.
 
-Flyway é o único escritor do esquema e o Hibernate usa `ddl-auto=validate`.
-Banco vazio recebe todas as migrações; soma de verificação ou histórico incompatível
-interrompe a inicialização. Geração automática de esquema, scripts manuais fora de
-versão e H2 foram rejeitados.
+O runtime Spring continua executando as 16 migrações Flyway e o Hibernate usa
+`ddl-auto=validate`. Em paralelo, o pacote independente `database/` declara o
+mesmo schema com Drizzle e mantém um baseline consolidado para PostgreSQL vazio.
+Os históricos não são misturados: um banco é preparado por Flyway ou pelo
+baseline Drizzle.
+
+A equivalência é verificada em dois PostgreSQL 18 independentes pela comparação
+dos catálogos resultantes e por provas reais da separação entre as roles de
+migração e runtime.
+
+Node e Drizzle são ferramentas de migração e não entram na imagem ou no processo
+Spring. Geração automática de esquema pelo Hibernate, scripts manuais fora de
+versão e H2 permanecem rejeitados.
 
 ## ADR-004 — Consistência explícita nas mutações
 

@@ -88,6 +88,8 @@ ou capturas de tela.
 ## Documentação verificável
 
 - contrato completo: [`docs/openapi.yaml`](docs/openapi.yaml);
+- schema e baseline Drizzle paralelos:
+  [`database/README.md`](database/README.md);
 - configuração de execução: [`docs/runtime-configuration.md`](docs/runtime-configuration.md);
 - sessão, cookie, CSRF, CORS e exemplos: [`docs/http-api.md`](docs/http-api.md);
 - Docker, Kubernetes local, Traefik e TLS:
