@@ -207,8 +207,9 @@ kubectl rollout status deployment/primeiro-prontuario-api \
   --namespace "$PP_NAMESPACE" \
   --timeout=300s
 
-PP_URL="$PP_URL" \
-PP_CA_CERT="$pp_tls_directory/ca.crt" \
+env \
+  PP_URL="$PP_URL" \
+  PP_CA_CERT="$pp_tls_directory/ca.crt" \
   "$pp_repository_root/scripts/smoke-kubernetes.sh"
 
 printf 'Contexto Kubernetes: %s\n' "$PP_CONTEXT_NAME"
