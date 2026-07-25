@@ -33,11 +33,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "app.doctor.password=valid-test-password",
             "server.servlet.session.cookie.secure=false"
         })
-class ConsultationApiIntegrationTest extends DrizzleSpringIntegrationTest {
+class ConsultationApiIntegrationTest extends FlywaySpringIntegrationTest {
 
     @Container
-    @ServiceConnection
-    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
+    @ServiceConnection(type = org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails.class)
+    private static final FlywayPostgreSQLContainer POSTGRESQL = new FlywayPostgreSQLContainer();
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void flywayProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        POSTGRESQL.registerFlywayProperties(registry);
+    }
 
     @LocalServerPort
     private int port;

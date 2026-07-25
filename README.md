@@ -43,34 +43,43 @@ local com valores exclusivamente fictícios:
 docker run --rm --name primeiro-prontuario-postgres \
   --publish 127.0.0.1:5432:5432 \
   --env POSTGRES_DB=primeiro_prontuario \
-  --env POSTGRES_USER=primeiro_prontuario_migration \
-  --env POSTGRES_PASSWORD=local-demo-password \
+  --env POSTGRES_USER=primeiro_prontuario_admin \
+  --env POSTGRES_PASSWORD=local-bootstrap-password \
   postgres:18.4
 ```
 
-Em outro terminal, crie a role de runtime e aplique o schema versionado somente
-pelo Drizzle:
+Em outro terminal, crie as roles distintas. A role de migração recebe DDL e
+privilégios padrão sobre os objetos que criar; a role de runtime recebe somente
+uso do schema e DML:
 
 ```bash
 docker exec \
-  --env PGPASSWORD=local-demo-password \
+  --env PGPASSWORD=local-bootstrap-password \
   primeiro-prontuario-postgres \
-  psql --username primeiro_prontuario_migration \
+  psql --username primeiro_prontuario_admin \
     --dbname primeiro_prontuario \
-    --command "CREATE ROLE primeiro_prontuario_runtime LOGIN PASSWORD 'local-runtime-password'"
-cd database
-npm ci
-DATABASE_URL='postgresql://primeiro_prontuario_migration:local-demo-password@localhost:5432/primeiro_prontuario' \
-  npm run migrate
-cd ..
+    --command "CREATE ROLE primeiro_prontuario_migration LOGIN PASSWORD 'local-migration-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS" \
+    --command "CREATE ROLE primeiro_prontuario_runtime LOGIN PASSWORD 'local-runtime-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS" \
+    --command "REVOKE CONNECT, TEMPORARY ON DATABASE primeiro_prontuario FROM PUBLIC" \
+    --command "GRANT CONNECT, CREATE ON DATABASE primeiro_prontuario TO primeiro_prontuario_migration" \
+    --command "GRANT CONNECT ON DATABASE primeiro_prontuario TO primeiro_prontuario_runtime" \
+    --command "REVOKE CREATE ON SCHEMA public FROM PUBLIC" \
+    --command "GRANT USAGE, CREATE ON SCHEMA public TO primeiro_prontuario_migration" \
+    --command "GRANT USAGE ON SCHEMA public TO primeiro_prontuario_runtime" \
+    --command "ALTER DEFAULT PRIVILEGES FOR ROLE primeiro_prontuario_migration IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO primeiro_prontuario_runtime" \
+    --command "ALTER DEFAULT PRIVILEGES FOR ROLE primeiro_prontuario_migration IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO primeiro_prontuario_runtime"
 ```
 
-Depois inicie o Spring somente com a role de runtime:
+Depois inicie o Spring. O Flyway usa a role de migração e aplica V1–V16; JPA e
+todo o runtime da API usam a role restrita:
 
 ```bash
 export DB_URL='jdbc:postgresql://localhost:5432/primeiro_prontuario'
 export DB_USERNAME='primeiro_prontuario_runtime'
 export DB_PASSWORD='local-runtime-password'
+export MIGRATION_DB_URL="$DB_URL"
+export MIGRATION_DB_USERNAME='primeiro_prontuario_migration'
+export MIGRATION_DB_PASSWORD='local-migration-password'
 export DOCTOR_USERNAME='doctor'
 export DOCTOR_PASSWORD='local-demo-doctor-password'
 export SESSION_COOKIE_SECURE='false'
@@ -78,17 +87,19 @@ export SESSION_COOKIE_SECURE='false'
 ```
 
 `SESSION_COOKIE_SECURE=false` é permitido somente nesse teste HTTP em loopback.
-A demonstração Kubernetes usa HTTPS e mantém o cookie seguro. O Spring nunca
-cria nem migra o schema; ele apenas valida pelo Hibernate o schema previamente
-aplicado pelo Drizzle.
+A demonstração Kubernetes usa HTTPS e mantém o cookie seguro. O Flyway prepara
+o schema antes de o Hibernate validá-lo; o Hibernate não cria nem altera tabelas.
 
 ## Configuração
 
 | Variável | Padrão | Uso |
 |---|---|---|
 | `DB_URL` | `jdbc:postgresql://localhost:5432/primeiro_prontuario` | conexão JDBC |
-| `DB_USERNAME` | `primeiro_prontuario` | usuário do banco |
+| `DB_USERNAME` | `primeiro_prontuario_runtime` | role de runtime do banco |
 | `DB_PASSWORD` | vazio | senha do banco |
+| `MIGRATION_DB_URL` | valor de `DB_URL` | JDBC usado somente pelo Flyway |
+| `MIGRATION_DB_USERNAME` | valor de `DB_USERNAME` | role usada somente pelo Flyway |
+| `MIGRATION_DB_PASSWORD` | valor de `DB_PASSWORD` | senha usada somente pelo Flyway |
 | `DOCTOR_USERNAME` | sem padrão | usuário único provisionado na inicialização |
 | `DOCTOR_PASSWORD` | sem padrão | senha do usuário único |
 | `APP_TIME_ZONE` | `America/Sao_Paulo` | interpretação das datas locais da agenda |
@@ -106,10 +117,8 @@ ou capturas de tela.
 ## Documentação verificável
 
 - contrato completo: [`docs/openapi.yaml`](docs/openapi.yaml);
-- schema e migrações Drizzle:
-  [`database/README.md`](database/README.md);
-- gate manual de schema no Neon sem importação:
-  [`docs/neon-production-cutover.md`](docs/neon-production-cutover.md);
+- migrações Flyway executadas pela API:
+  [`src/main/resources/db/migration`](src/main/resources/db/migration);
 - configuração de execução: [`docs/runtime-configuration.md`](docs/runtime-configuration.md);
 - sessão, cookie, CSRF, CORS e exemplos: [`docs/http-api.md`](docs/http-api.md);
 - Docker, Kubernetes local, Traefik e TLS:

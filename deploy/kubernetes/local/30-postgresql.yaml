@@ -66,11 +66,21 @@ spec:
                 secretKeyRef:
                   name: primeiro-prontuario-credentials
                   key: migration-password
+            - name: MIGRATION_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: primeiro-prontuario-credentials
+                  key: migration-username
             - name: RUNTIME_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: primeiro-prontuario-credentials
                   key: database-password
+            - name: RUNTIME_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: primeiro-prontuario-credentials
+                  key: database-username
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           ports:

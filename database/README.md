@@ -1,9 +1,11 @@
 # Pacote de banco
 
-Este pacote é o único caminho suportado para declarar e migrar o schema
-PostgreSQL. Node e Drizzle não participam da compilação, da imagem ou do processo
-runtime da API Spring. O Spring conecta somente com a role de runtime e valida o
-schema existente com Hibernate.
+Este pacote mantém o caminho Drizzle como fonte primária de migração do
+schema PostgreSQL para o runtime. Em paralelo, o diretório
+`src/main/resources/db/migration` guarda as migrations Flyway em V1–V16 para
+prova de equivalência estrutural. Node e Drizzle não participam da compilação,
+da imagem ou do processo runtime da API Spring. O Spring conecta somente com a
+role de runtime e valida o schema existente com Hibernate.
 
 ## Pré-requisitos
 

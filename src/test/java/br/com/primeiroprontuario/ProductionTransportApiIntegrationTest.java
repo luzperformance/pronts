@@ -20,11 +20,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         classes = PrimeiroProntuarioApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"app.doctor.username=doctor", "app.doctor.password=valid-test-password"})
-class ProductionTransportApiIntegrationTest extends DrizzleSpringIntegrationTest {
+class ProductionTransportApiIntegrationTest extends FlywaySpringIntegrationTest {
 
     @Container
-    @ServiceConnection
-    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
+    @ServiceConnection(type = org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails.class)
+    private static final FlywayPostgreSQLContainer POSTGRESQL = new FlywayPostgreSQLContainer();
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void flywayProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        POSTGRESQL.registerFlywayProperties(registry);
+    }
 
     @LocalServerPort
     private int port;

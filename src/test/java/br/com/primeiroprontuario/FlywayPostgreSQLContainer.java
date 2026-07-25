@@ -1,27 +1,21 @@
 package br.com.primeiroprontuario;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.springframework.test.context.DynamicPropertyRegistry;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-final class DrizzlePostgreSQLContainer extends PostgreSQLContainer {
+final class FlywayPostgreSQLContainer extends PostgreSQLContainer {
 
     private static final String DATABASE_NAME = "primeiro_prontuario";
     private static final String MIGRATION_USERNAME = "primeiro_prontuario_migration";
     private static final String MIGRATION_PASSWORD = "ephemeral-migration-password";
     private static final String RUNTIME_USERNAME = "primeiro_prontuario_runtime";
     private static final String RUNTIME_PASSWORD = "ephemeral-runtime-password";
-    private static final Path DATABASE_PACKAGE = Path.of(System.getProperty("user.dir"), "database");
-    private static final Path DRIZZLE_EXECUTABLE = DATABASE_PACKAGE.resolve("node_modules/.bin/drizzle-kit");
-
     private boolean prepared;
 
-    DrizzlePostgreSQLContainer() {
+    FlywayPostgreSQLContainer() {
         super("postgres:18.4");
         withDatabaseName(DATABASE_NAME);
     }
@@ -35,7 +29,6 @@ final class DrizzlePostgreSQLContainer extends PostgreSQLContainer {
         super.start();
         try {
             createExternalRoles();
-            applyDrizzleMigrations();
             prepared = true;
         } catch (RuntimeException exception) {
             super.stop();
@@ -55,6 +48,28 @@ final class DrizzlePostgreSQLContainer extends PostgreSQLContainer {
 
     Connection openMigrationConnection() throws SQLException {
         return DriverManager.getConnection(super.getJdbcUrl(), MIGRATION_USERNAME, MIGRATION_PASSWORD);
+    }
+
+    Connection openRuntimeConnection() throws SQLException {
+        return DriverManager.getConnection(super.getJdbcUrl(), RUNTIME_USERNAME, RUNTIME_PASSWORD);
+    }
+
+    void registerFlywayProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.flyway.url", () -> super.getJdbcUrl());
+        registry.add("spring.flyway.user", () -> MIGRATION_USERNAME);
+        registry.add("spring.flyway.password", () -> MIGRATION_PASSWORD);
+    }
+
+    String getMigrationJdbcUrl() {
+        return super.getJdbcUrl();
+    }
+
+    String getMigrationUsername() {
+        return MIGRATION_USERNAME;
+    }
+
+    String getMigrationPassword() {
+        return MIGRATION_PASSWORD;
     }
 
     private void createExternalRoles() {
@@ -92,66 +107,34 @@ final class DrizzlePostgreSQLContainer extends PostgreSQLContainer {
                     ON DATABASE primeiro_prontuario
                     TO primeiro_prontuario_runtime;
 
+                    REVOKE CREATE
+                    ON SCHEMA public
+                    FROM PUBLIC;
+
                     GRANT USAGE, CREATE
                     ON SCHEMA public
                     TO primeiro_prontuario_migration;
+
+                    GRANT USAGE
+                    ON SCHEMA public
+                    TO primeiro_prontuario_runtime;
+
+                    ALTER DEFAULT PRIVILEGES
+                    FOR ROLE primeiro_prontuario_migration
+                    IN SCHEMA public
+                    GRANT SELECT, INSERT, UPDATE, DELETE
+                    ON TABLES
+                    TO primeiro_prontuario_runtime;
+
+                    ALTER DEFAULT PRIVILEGES
+                    FOR ROLE primeiro_prontuario_migration
+                    IN SCHEMA public
+                    GRANT USAGE, SELECT, UPDATE
+                    ON SEQUENCES
+                    TO primeiro_prontuario_runtime;
                     """);
         } catch (SQLException exception) {
             throw new IllegalStateException("Could not create the disposable migration and runtime roles", exception);
         }
-    }
-
-    private void applyDrizzleMigrations() {
-        if (!Files.isRegularFile(DATABASE_PACKAGE.resolve("drizzle/meta/_journal.json"))) {
-            throw new IllegalStateException("Could not find the versioned Drizzle migrations in " + DATABASE_PACKAGE);
-        }
-
-        ensureDrizzleTooling();
-        var processBuilder = new ProcessBuilder("npm", "run", "migrate")
-                .directory(DATABASE_PACKAGE.toFile())
-                .redirectErrorStream(true);
-        processBuilder.environment().put("DATABASE_URL", migrationConnectionUrl());
-        run(processBuilder, "Drizzle migration failed");
-    }
-
-    private static synchronized void ensureDrizzleTooling() {
-        if (Files.isExecutable(DRIZZLE_EXECUTABLE)) {
-            return;
-        }
-
-        var processBuilder = new ProcessBuilder("npm", "ci")
-                .directory(DATABASE_PACKAGE.toFile())
-                .redirectErrorStream(true);
-        processBuilder.environment().remove("DATABASE_URL");
-        run(processBuilder, "Could not install the pinned Drizzle test tooling");
-    }
-
-    private static void run(ProcessBuilder processBuilder, String failureMessage) {
-        try {
-            var process = processBuilder.start();
-            var output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            var exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new IllegalStateException(failureMessage + ":\n" + output);
-            }
-        } catch (IOException exception) {
-            throw new IllegalStateException(failureMessage, exception);
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while executing the Drizzle test tooling", exception);
-        }
-    }
-
-    private String migrationConnectionUrl() {
-        return "postgresql://"
-                + MIGRATION_USERNAME
-                + ":"
-                + MIGRATION_PASSWORD
-                + "@"
-                + getHost()
-                + ":"
-                + getMappedPort(POSTGRESQL_PORT)
-                + "/"
-                + DATABASE_NAME;
     }
 }

@@ -7,17 +7,17 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 class ApplicationStartupIntegrationTest {
 
     @Test
-    void startsWithTheRuntimeRoleOnAnEmptyDatabasePreparedByDrizzle() throws Exception {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+    void flywayPreparesAnEmptyDatabaseBeforeSpringStartsWithTheRestrictedRuntimeRole() throws Exception {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
 
             try (var application = startApplication(postgresql)) {
@@ -44,21 +44,23 @@ class ApplicationStartupIntegrationTest {
 
             try (var connection = postgresql.openMigrationConnection();
                     var statement = connection.createStatement();
-                    var migrations = statement.executeQuery("SELECT count(*) FROM drizzle.__drizzle_migrations")) {
+                    var migrations = statement.executeQuery("SELECT count(*) FROM flyway_schema_history")) {
                 assertThat(migrations.next()).isTrue();
-                assertThat(migrations.getLong(1)).isEqualTo(1);
-                try (var flyway =
-                        statement.executeQuery("SELECT to_regclass('public.flyway_schema_history') IS NULL")) {
-                    assertThat(flyway.next()).isTrue();
-                    assertThat(flyway.getBoolean(1)).isTrue();
-                }
+                assertThat(migrations.getLong(1)).isEqualTo(16);
+            }
+
+            try (var connection = postgresql.openRuntimeConnection();
+                    var statement = connection.createStatement()) {
+                assertPrivilegeDenied(() -> statement.execute("CREATE TABLE runtime_must_not_create (id integer)"));
+                assertPrivilegeDenied(() -> statement.execute("CREATE TEMPORARY TABLE runtime_temp (id integer)"));
+                assertPrivilegeDenied(() -> statement.execute("SET ROLE primeiro_prontuario_migration"));
             }
         }
     }
 
     @Test
     void restartWithTheSameSecretKeepsTheSingleDoctorAccountUnchanged() {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
             String initialPasswordHash;
 
@@ -81,7 +83,7 @@ class ApplicationStartupIntegrationTest {
 
     @Test
     void changedSecretReplacesTheHashAndOnlyTheNewPasswordAuthenticates() throws Exception {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
             String initialPasswordHash;
 
@@ -109,7 +111,7 @@ class ApplicationStartupIntegrationTest {
 
     @Test
     void refusesToStartWhenMoreThanOneDoctorAccountExists() throws Exception {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
             try (var application = startApplication(postgresql)) {
                 assertThat(application.isActive()).isTrue();
@@ -149,7 +151,7 @@ class ApplicationStartupIntegrationTest {
 
     @Test
     void refusesToStartWhenTheConfiguredUsernameChanges() {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
             try (var application = startApplication(postgresql)) {
                 assertThat(application.isActive()).isTrue();
@@ -163,7 +165,7 @@ class ApplicationStartupIntegrationTest {
 
     @Test
     void refusesToStartWhenTheSchemaIsIncompatible() throws Exception {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
 
             try (var application = startApplication(postgresql)) {
@@ -183,12 +185,12 @@ class ApplicationStartupIntegrationTest {
         }
     }
 
-    private ConfigurableApplicationContext startApplication(PostgreSQLContainer postgresql) {
+    private ConfigurableApplicationContext startApplication(FlywayPostgreSQLContainer postgresql) {
         return startApplication(postgresql, "doctor", "valid-test-password");
     }
 
     private ConfigurableApplicationContext startApplication(
-            PostgreSQLContainer postgresql, String doctorUsername, String doctorPassword) {
+            FlywayPostgreSQLContainer postgresql, String doctorUsername, String doctorPassword) {
         return SpringApplication.run(
                 PrimeiroProntuarioApplication.class,
                 "--server.port=0",
@@ -196,8 +198,23 @@ class ApplicationStartupIntegrationTest {
                 "--DB_URL=" + postgresql.getJdbcUrl(),
                 "--DB_USERNAME=" + postgresql.getUsername(),
                 "--DB_PASSWORD=" + postgresql.getPassword(),
+                "--MIGRATION_DB_URL=" + postgresql.getMigrationJdbcUrl(),
+                "--MIGRATION_DB_USERNAME=" + postgresql.getMigrationUsername(),
+                "--MIGRATION_DB_PASSWORD=" + postgresql.getMigrationPassword(),
                 "--app.doctor.username=" + doctorUsername,
                 "--app.doctor.password=" + doctorPassword);
+    }
+
+    private void assertPrivilegeDenied(SqlOperation operation) {
+        assertThatThrownBy(operation::run)
+                .isInstanceOf(SQLException.class)
+                .extracting(exception -> ((SQLException) exception).getSQLState())
+                .isEqualTo("42501");
+    }
+
+    @FunctionalInterface
+    private interface SqlOperation {
+        void run() throws SQLException;
     }
 
     private HttpResponse<String> login(ConfigurableApplicationContext application, String username, String password)

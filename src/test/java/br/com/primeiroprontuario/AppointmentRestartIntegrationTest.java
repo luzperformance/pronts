@@ -17,7 +17,7 @@ class AppointmentRestartIntegrationTest {
 
     @Test
     void overlappingAppointmentStillConflictsAfterApplicationRestart() throws Exception {
-        try (var postgresql = new DrizzlePostgreSQLContainer()) {
+        try (var postgresql = new FlywayPostgreSQLContainer()) {
             postgresql.start();
             String patientId;
 
@@ -57,7 +57,7 @@ class AppointmentRestartIntegrationTest {
         }
     }
 
-    private ConfigurableApplicationContext startApplication(DrizzlePostgreSQLContainer postgresql) {
+    private ConfigurableApplicationContext startApplication(FlywayPostgreSQLContainer postgresql) {
         return SpringApplication.run(
                 PrimeiroProntuarioApplication.class,
                 "--server.port=0",
@@ -65,6 +65,9 @@ class AppointmentRestartIntegrationTest {
                 "--DB_URL=" + postgresql.getJdbcUrl(),
                 "--DB_USERNAME=" + postgresql.getUsername(),
                 "--DB_PASSWORD=" + postgresql.getPassword(),
+                "--MIGRATION_DB_URL=" + postgresql.getMigrationJdbcUrl(),
+                "--MIGRATION_DB_USERNAME=" + postgresql.getMigrationUsername(),
+                "--MIGRATION_DB_PASSWORD=" + postgresql.getMigrationPassword(),
                 "--app.doctor.username=doctor",
                 "--app.doctor.password=valid-test-password");
     }

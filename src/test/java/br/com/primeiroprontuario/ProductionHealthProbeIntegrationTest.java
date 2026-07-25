@@ -30,8 +30,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ProductionHealthProbeIntegrationTest {
 
     @Container
-    @ServiceConnection
-    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
+    @ServiceConnection(type = org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails.class)
+    private static final FlywayPostgreSQLContainer POSTGRESQL = new FlywayPostgreSQLContainer();
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void flywayProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        POSTGRESQL.registerFlywayProperties(registry);
+    }
 
     @Autowired
     private DataSource dataSource;
@@ -40,11 +45,11 @@ class ProductionHealthProbeIntegrationTest {
     private int port;
 
     @Test
-    void runtimeUsesSmallPoolWithoutFlywayAndKeepsLivenessDuringDatabaseOutage() throws Exception {
+    void runtimeUsesSmallPoolAfterFlywayAndKeepsLivenessDuringDatabaseOutage() throws Exception {
         var hikari = (HikariDataSource) dataSource;
         assertThat(hikari.getMinimumIdle()).isEqualTo(1);
         assertThat(hikari.getMaximumPoolSize()).isEqualTo(5);
-        assertThat(flywayHistoryExists()).isFalse();
+        assertThat(flywayHistoryExists()).isTrue();
 
         assertHealth("/actuator/health/liveness", 200, "{\"status\":\"UP\"}");
         assertHealth("/actuator/health/readiness", 200, "{\"status\":\"UP\"}");

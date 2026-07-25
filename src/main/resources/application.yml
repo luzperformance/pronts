@@ -3,8 +3,13 @@ spring:
     name: primeiro-prontuario-api
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/primeiro_prontuario}
-    username: ${DB_USERNAME:primeiro_prontuario}
+    username: ${DB_USERNAME:primeiro_prontuario_runtime}
     password: ${DB_PASSWORD:}
+  flyway:
+    enabled: true
+    url: ${MIGRATION_DB_URL:${DB_URL:jdbc:postgresql://localhost:5432/primeiro_prontuario}}
+    user: ${MIGRATION_DB_USERNAME:${DB_USERNAME:primeiro_prontuario_runtime}}
+    password: ${MIGRATION_DB_PASSWORD:${DB_PASSWORD:}}
   jpa:
     hibernate:
       ddl-auto: validate

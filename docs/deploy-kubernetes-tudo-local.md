@@ -1,8 +1,8 @@
 # Kubernetes integralmente local
 
 Este laboratório cria localmente um cluster k3d com Traefik, PostgreSQL 18,
-TLS, PVCs, migração Drizzle e a API. Nenhuma conta, banco, domínio ou credencial
-da Hostinger ou do Neon é utilizada.
+TLS, PVCs, migração Flyway e a API. Nenhuma conta, banco, domínio ou credencial
+gerenciada é utilizada.
 
 O ambiente usa:
 
@@ -29,7 +29,7 @@ O script é idempotente para o cluster existente. Ele:
 3. constrói e importa a imagem da API;
 4. gera credenciais e certificado exclusivamente locais;
 5. inicia o PostgreSQL com roles separadas de bootstrap, migração e runtime;
-6. aplica o baseline Drizzle por um `port-forward` temporário;
+6. inicia a API, que aplica V1–V16 pelo Flyway com a role de migração;
 7. implanta API, PVC de anexos, Traefik e TLS;
 8. executa o smoke REST, recriando os pods da API e do PostgreSQL para comprovar
    persistência.

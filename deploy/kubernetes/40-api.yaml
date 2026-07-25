@@ -65,6 +65,21 @@ spec:
                 secretKeyRef:
                   name: primeiro-prontuario-credentials
                   key: database-password
+            - name: MIGRATION_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: primeiro-prontuario-credentials
+                  key: database-url
+            - name: MIGRATION_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: primeiro-prontuario-credentials
+                  key: migration-username
+            - name: MIGRATION_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: primeiro-prontuario-credentials
+                  key: migration-password
             - name: DOCTOR_USERNAME
               valueFrom:
                 secretKeyRef:

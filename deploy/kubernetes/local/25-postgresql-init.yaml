@@ -10,16 +10,20 @@ data:
 
     psql \
       --set=ON_ERROR_STOP=1 \
+      --set=migration_username="$MIGRATION_USERNAME" \
       --set=migration_password="$MIGRATION_PASSWORD" \
+      --set=runtime_username="$RUNTIME_USERNAME" \
       --set=runtime_password="$RUNTIME_PASSWORD" \
       --username "$POSTGRES_USER" \
       --dbname "$POSTGRES_DB" <<'SQL'
     SELECT format(
-      'CREATE ROLE primeiro_prontuario_migration LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+      'CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+      :'migration_username',
       :'migration_password'
     ) \gexec
     SELECT format(
-      'CREATE ROLE primeiro_prontuario_runtime LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+      'CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+      :'runtime_username',
       :'runtime_password'
     ) \gexec
 
@@ -27,15 +31,41 @@ data:
     ON DATABASE primeiro_prontuario
     FROM PUBLIC;
 
-    GRANT CONNECT, CREATE
-    ON DATABASE primeiro_prontuario
-    TO primeiro_prontuario_migration;
+    SELECT format(
+      'GRANT CONNECT, CREATE ON DATABASE primeiro_prontuario TO %I',
+      :'migration_username'
+    ) \gexec
 
-    GRANT CONNECT
-    ON DATABASE primeiro_prontuario
-    TO primeiro_prontuario_runtime;
+    SELECT format(
+      'GRANT CONNECT ON DATABASE primeiro_prontuario TO %I',
+      :'runtime_username'
+    ) \gexec
 
-    GRANT USAGE, CREATE
+    REVOKE CREATE
     ON SCHEMA public
-    TO primeiro_prontuario_migration;
+    FROM PUBLIC;
+
+    SELECT format(
+      'GRANT USAGE, CREATE ON SCHEMA public TO %I',
+      :'migration_username'
+    ) \gexec
+
+    SELECT format(
+      'GRANT USAGE ON SCHEMA public TO %I',
+      :'runtime_username'
+    ) \gexec
+
+    SELECT format(
+      'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public
+       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I',
+      :'migration_username',
+      :'runtime_username'
+    ) \gexec
+
+    SELECT format(
+      'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public
+       GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO %I',
+      :'migration_username',
+      :'runtime_username'
+    ) \gexec
     SQL

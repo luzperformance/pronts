@@ -42,11 +42,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "spring.jpa.properties.hibernate.generate_statistics=true"
         })
 @Import(MedicalRecordApiIntegrationTest.TestClockConfiguration.class)
-class MedicalRecordApiIntegrationTest extends DrizzleSpringIntegrationTest {
+class MedicalRecordApiIntegrationTest extends FlywaySpringIntegrationTest {
 
     @Container
-    @ServiceConnection
-    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
+    @ServiceConnection(type = org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails.class)
+    private static final FlywayPostgreSQLContainer POSTGRESQL = new FlywayPostgreSQLContainer();
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void flywayProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        POSTGRESQL.registerFlywayProperties(registry);
+    }
 
     @LocalServerPort
     private int port;

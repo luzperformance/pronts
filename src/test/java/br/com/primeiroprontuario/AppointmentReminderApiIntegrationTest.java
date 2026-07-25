@@ -40,11 +40,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "app.time-zone=America/Sao_Paulo",
             "server.servlet.session.cookie.secure=false"
         })
-class AppointmentReminderApiIntegrationTest extends DrizzleSpringIntegrationTest {
+class AppointmentReminderApiIntegrationTest extends FlywaySpringIntegrationTest {
 
     @Container
-    @ServiceConnection
-    private static final DrizzlePostgreSQLContainer POSTGRESQL = new DrizzlePostgreSQLContainer();
+    @ServiceConnection(type = org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails.class)
+    private static final FlywayPostgreSQLContainer POSTGRESQL = new FlywayPostgreSQLContainer();
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void flywayProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        POSTGRESQL.registerFlywayProperties(registry);
+    }
 
     @LocalServerPort
     private int port;

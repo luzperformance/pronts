@@ -2,9 +2,9 @@ package br.com.primeiroprontuario;
 
 import java.sql.SQLException;
 
-abstract class DrizzleSpringIntegrationTest {
+abstract class FlywaySpringIntegrationTest {
 
-    static void executeAsMigration(DrizzlePostgreSQLContainer database, String sql) {
+    static void executeAsMigration(FlywayPostgreSQLContainer database, String sql) {
         try (var connection = database.openMigrationConnection();
                 var statement = connection.createStatement()) {
             statement.execute(sql);

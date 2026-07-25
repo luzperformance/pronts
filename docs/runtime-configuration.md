@@ -9,9 +9,12 @@ ambiente exposto.
 
 | Variável | Obrigatória | Uso |
 | --- | --- | --- |
-| `DB_URL` | sim fora dos testes | JDBC do endpoint direto Neon, sem `-pooler`, com TLS obrigatório |
+| `DB_URL` | sim fora dos testes | JDBC do PostgreSQL 18 local |
 | `DB_USERNAME` | sim fora dos testes | role de runtime do PostgreSQL |
 | `DB_PASSWORD` | sim fora dos testes | senha da role de runtime; não deve ser versionada |
+| `MIGRATION_DB_URL` | sim fora dos testes | JDBC usado somente pelo Flyway; pode ser o mesmo endereço de `DB_URL` |
+| `MIGRATION_DB_USERNAME` | sim fora dos testes | role separada com permissão para migrar o schema |
+| `MIGRATION_DB_PASSWORD` | sim fora dos testes | senha da role de migração; não deve ser versionada |
 | `DOCTOR_USERNAME` | sim | usuário único do médico |
 | `DOCTOR_PASSWORD` | sim | senha inicial; a aplicação persiste somente o resumo criptográfico adaptativo |
 | `APP_CORS_ALLOWED_ORIGIN` | não | única origem exata aceita; vazia rejeita todo acesso entre origens |
@@ -28,10 +31,10 @@ leitura do arquivo no limite público. Todas as listagens paginadas aceitam
 
 ## Produção atrás do Traefik
 
-Ative o perfil `prod`. O Spring não contém migrador de schema; o deploy só pode
-começar depois do gate Drizzle. O perfil configura o HikariCP com
-`minimum-idle=1` e `maximum-pool-size=5`. No Kubernetes, o `ConfigMap` também
-impõe `sslmode=require` ao driver PostgreSQL. O perfil fixa `Secure` no cookie de
+Ative o perfil `prod`. Durante a inicialização, o Flyway usa as credenciais de
+migração e aplica as versões pendentes antes da validação do Hibernate. O
+DataSource da aplicação usa apenas a role de runtime. O perfil configura o
+HikariCP com `minimum-idle=1` e `maximum-pool-size=5`, fixa `Secure` no cookie de
 sessão, produz logs JSON e usa o processamento nativo de cabeçalhos encaminhados
 do Tomcat. O
 `X-Forwarded-Proto` só é considerado quando a conexão imediata vem de
